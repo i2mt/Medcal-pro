@@ -1,0 +1,1551 @@
+// ============================================
+// APP STATE & CONFIGURATION
+// ============================================
+const AppState = {
+    selectedDrug: 'heparin',
+    infusionMethod: 'syringe',
+    solutionVolume: 50,
+    ampouleCount: 2,
+    desiredDose: '',
+    patientWeight: '',
+    useWeight: false,
+    currentAmpouleIndex: 0,
+    theme: 'light',
+    currentTab: 'calculator',
+    calculationsToday: 0,
+    customVolume: false,
+    settings: {
+        darkMode: false,
+        largeFont: false,
+        doseAlerts: true,
+        compatAlerts: true,
+        saveHistory: true
+    }
+};
+
+// ============================================
+// BIDIRECTIONAL TEXT SUPPORT
+// ============================================
+const TextDirection = {
+    wrapLatin: function(text) {
+        if (!text) return '';
+        const hasLatin = /[A-Za-z0-9]/.test(text);
+        if (hasLatin) return `\u202B${text}\u202C`;
+        return text;
+    },
+    wrapPersian: function(text) {
+        if (!text) return '';
+        const hasRTL = /[\u0600-\u06FF]/.test(text);
+        if (hasRTL) return `\u202B${text}\u202C`;
+        return text;
+    },
+    fixMixedText: function(text) {
+        if (!text) return '';
+        const segments = this.splitByLanguage(text);
+        return segments.map(segment => {
+            if (segment.isLatin) return this.wrapLatin(segment.text);
+            return segment.text;
+        }).join('');
+    },
+    splitByLanguage: function(text) {
+        const segments = [];
+        let currentSegment = '';
+        let currentIsLatin = null;
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            const isLatin = /[A-Za-z0-9.,\/;:!?@#$%^&*()_+\-=\[\]{}'"\\|<>]/.test(char);
+            if (currentIsLatin !== isLatin && currentSegment !== '') {
+                segments.push({ text: currentSegment, isLatin: currentIsLatin });
+                currentSegment = '';
+            }
+            currentSegment += char;
+            currentIsLatin = isLatin;
+        }
+        if (currentSegment !== '') segments.push({ text: currentSegment, isLatin: currentIsLatin });
+        return segments;
+    },
+    formatDrugInfo: function(persian, latin) {
+        if (!latin) return persian;
+        if (!persian) return this.wrapLatin(latin);
+        return `${persian}\u200F \u200E${this.wrapLatin(latin)}\u200F`;
+    },
+    createBilingualLabel: function(persianLabel, latinValue) {
+        return `${persianLabel}:\u200F \u200E${this.wrapLatin(latinValue)}`;
+    },
+    applyBidiFixes: function() {
+        document.querySelectorAll('.text-mixed, .text-latin, .drug-name-english').forEach(el => {
+            el.style.unicodeBidi = 'isolate';
+            el.style.direction = 'ltr';
+        });
+        document.querySelectorAll('.persian-text, .drug-name-compact, .selected-drug-name-compact').forEach(el => {
+            el.style.unicodeBidi = 'isolate';
+            el.style.direction = 'rtl';
+        });
+        document.querySelectorAll('input[type="number"], input[type="text"]').forEach(input => {
+            input.style.unicodeBidi = 'plaintext';
+        });
+    }
+};
+
+// ============================================
+// PERSIAN NUMBER SUPPORT
+// ============================================
+const PersianNumbers = {
+    persianToLatin: {
+        '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9',
+        '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9',
+        '٫':'.','٬':',','،':',','−':'-','–':'-','—':'-'
+    },
+    latinToPersian: {
+        '0':'۰','1':'۱','2':'۲','3':'۳','4':'۴','5':'۵','6':'۶','7':'۷','8':'۸','9':'۹',
+        '.':'٫',',':'٬'
+    },
+    toLatin: function(text) {
+        if (!text) return '';
+        return text.toString().split('').map(char => this.persianToLatin[char] || char).join('');
+    },
+    toPersian: function(text) {
+        if (!text) return '';
+        return text.toString().split('').map(char => this.latinToPersian[char] || char).join('');
+    },
+    parseNumber: function(text) {
+        if (!text || text.toString().trim() === '') return NaN;
+        let s = this.toLatin(text.toString()).trim();
+        s = s.replace(/\s+/g, '');
+        if (s.includes('.')) {
+            s = s.replace(/,/g, '');
+        } else if (s.includes(',')) {
+            const thousandsPattern = /^-?\d{1,3}(,\d{3})+$/;
+            if (thousandsPattern.test(s)) {
+                s = s.replace(/,/g, '');
+            } else {
+                s = s.replace(',', '.');
+                s = s.replace(/,/g, '');
+            }
+        }
+        return parseFloat(s);
+    },
+    formatNumber: function(number, decimals = 2) {
+        if (!Number.isFinite(number)) return '0';
+        const d = parseInt(decimals, 10);
+        const usedDecimals = Number.isFinite(d) ? d : 2;
+        return number.toFixed(usedDecimals);
+    },
+    formatMixedText: function(text) {
+        if (!text) return '';
+        let formatted = this.toLatin(text.toString());
+        formatted = TextDirection.fixMixedText(formatted);
+        formatted = formatted.replace(/([A-Za-z][A-Za-z0-9\s.,\/;:!?@#$%^&*()_+\-=\[\]{}'"\\|<>]+)/g,
+            match => `\u202B${match}\u202C`);
+        return formatted;
+    },
+    parseMixed: function(text) {
+        if (!text) return 0;
+        let latinText = this.toLatin(text.toString());
+        latinText = latinText.replace(/[^\d.\-]/g, '');
+        return parseFloat(latinText) || 0;
+    },
+    bilingual: function(persian, latin, showBoth = true) {
+        if (!showBoth || !latin) return persian;
+        return `${persian}\u200F \u200E(${latin})\u200F`;
+    }
+};
+
+// ============================================
+// SIMPLE INPUT HANDLING
+// ============================================
+function setupSimpleInputHandling() {
+    document.querySelectorAll('input[type="text"], input[type="number"], input[type="tel"], textarea').forEach(input => {
+        input.style.textAlign = 'center';
+    });
+
+    const style = document.createElement('style');
+    style.textContent = `::placeholder { text-align: center !important; } input::placeholder { text-align: center !important; }`;
+    document.head.appendChild(style);
+
+    document.querySelectorAll('input[type="number"], input[type="text"].numeric-input').forEach(input => {
+        input.addEventListener('focus', function() { this.select(); });
+        input.addEventListener('click', function() { this.select(); });
+    });
+
+    const calculatorInputs = [DOM.doctorOrder, DOM.patientWeight, DOM.customVolume];
+    calculatorInputs.forEach(input => {
+        if (!input) return;
+        input.addEventListener('focus', function() { this.select(); });
+        input.addEventListener('click', function() { this.select(); });
+        input.addEventListener('input', function() {
+            const before = this.value || '';
+            const normalized = PersianNumbers.toLatin(before);
+            if (normalized !== before) {
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = normalized;
+                if (start != null && end != null) this.setSelectionRange(start, end);
+            }
+            const numValue = PersianNumbers.parseNumber(this.value);
+            if (!isNaN(numValue)) this.dataset.numericValue = numValue;
+            clearResults();
+        });
+        input.addEventListener('blur', function() {
+            if (this.value && this.value.trim() !== '') {
+                try {
+                    const numValue = PersianNumbers.parseNumber(this.value);
+                    if (!isNaN(numValue)) {
+                        this.dataset.numericValue = numValue;
+                        const decimalsAttr = this.getAttribute('data-decimals');
+                        const decimals = decimalsAttr == null ? 2 : parseInt(decimalsAttr, 10);
+                        const latinValue = PersianNumbers.formatNumber(numValue, Number.isFinite(decimals) ? decimals : 2);
+                        if (this.value !== latinValue) this.value = latinValue;
+                    }
+                } catch (e) { /* keep original */ }
+            }
+        });
+    });
+}
+
+// ============================================
+// MOBILE NUMERIC KEYBOARD
+// ============================================
+function setupMobileNumericKeyboard() {
+    document.querySelectorAll('input').forEach(input => {
+        const type = input.type;
+        const name = input.name || input.id || '';
+        const isNumericField = type === 'number' || name.includes('dose') || name.includes('weight') ||
+            name.includes('volume') || name.includes('count') || name.includes('value') ||
+            name.includes('amount') || input.classList.contains('numeric-input') ||
+            input.getAttribute('data-numeric') === 'true';
+
+        if (isNumericField) {
+            if (input.getAttribute('step') === '1' || name.includes('count') || name.includes('age') || name.includes('ampoule')) {
+                input.setAttribute('inputmode', 'numeric');
+                input.setAttribute('pattern', '[0-9]*');
+            } else {
+                input.setAttribute('inputmode', 'decimal');
+                input.setAttribute('pattern', '[0-9]*[.,]?[0-9]*');
+            }
+            input.classList.add('numeric-keyboard');
+            input.style.textAlign = 'center';
+            input.addEventListener('input', function() {
+                const before = this.value || '';
+                const normalized = PersianNumbers.toLatin(before);
+                if (normalized !== before) {
+                    const start = this.selectionStart;
+                    const end = this.selectionEnd;
+                    this.value = normalized;
+                    if (start != null && end != null) this.setSelectionRange(start, end);
+                }
+                const numValue = PersianNumbers.parseNumber(this.value);
+                if (!isNaN(numValue)) this.dataset.numericValue = numValue;
+            });
+        }
+    });
+}
+
+// ============================================
+// DOM ELEMENTS
+// ============================================
+const DOM = {
+    themeToggle: document.getElementById('themeToggle'),
+    historyBtn: document.getElementById('historyBtn'),
+    settingsBtn: document.getElementById('settingsBtn'),
+    drugGrid: document.getElementById('drugGrid'),
+    drugSearch: document.getElementById('drugSearch'),
+    selectedDrugIcon: document.getElementById('selectedDrugIcon'),
+    selectedDrugName: document.getElementById('selectedDrugName'),
+    selectedDrugDesc: document.getElementById('selectedDrugDesc'),
+    methodBtns: document.querySelectorAll('.method-btn-compact'),
+    volumeOptions: document.getElementById('volumeOptions'),
+    customVolume: document.getElementById('customVolume'),
+    customVolumeContainer: document.getElementById('customVolumeContainer'),
+    ampouleCount: document.getElementById('ampouleCount'),
+    decreaseAmpoule: document.getElementById('decreaseAmpoule'),
+    increaseAmpoule: document.getElementById('increaseAmpoule'),
+    ampouleInfo: document.getElementById('ampouleInfo'),
+    doctorOrder: document.getElementById('doctorOrder'),
+    weightContainer: document.getElementById('weightContainer'),
+    weightCheckbox: document.getElementById('weightCheckbox'),
+    patientWeight: document.getElementById('patientWeight'),
+    calculateBtn: document.getElementById('calculateBtn'),
+    resultsSection: document.getElementById('resultsSection'),
+    totalDrugAmount: document.getElementById('totalDrugAmount'),
+    totalDrugUnit: document.getElementById('totalDrugUnit'),
+    concentrationResult: document.getElementById('concentrationResult'),
+    concentrationUnit: document.getElementById('concentrationUnit'),
+    pumpRateResult: document.getElementById('pumpRateResult'),
+    pumpRateUnit: document.getElementById('pumpRateUnit'),
+    durationResult: document.getElementById('durationResult'),
+    durationUnit: document.getElementById('durationUnit'),
+    guideSection: document.getElementById('guideSection'),
+    stepByStepGuide: document.getElementById('stepByStepGuide'),
+    warningsSection: document.getElementById('warningsSection'),
+    warningsList: document.getElementById('warningsList'),
+    compatibilitySection: document.getElementById('compatibilitySection'),
+    compatibleDrugsList: document.getElementById('compatibleDrugsList'),
+    incompatibleDrugsList: document.getElementById('incompatibleDrugsList'),
+    settingsModal: document.getElementById('settingsModal'),
+    historyModal: document.getElementById('historyModal'),
+    closeSettings: document.getElementById('closeSettings'),
+    closeHistory: document.getElementById('closeHistory'),
+    darkModeToggle: document.getElementById('darkModeToggle'),
+    largeFontToggle: document.getElementById('largeFontToggle'),
+    doseAlertToggle: document.getElementById('doseAlertToggle'),
+    compatAlertToggle: document.getElementById('compatAlertToggle'),
+    saveHistoryToggle: document.getElementById('saveHistoryToggle'),
+    clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+    exportDataBtn: document.getElementById('exportDataBtn'),
+    checkUpdateBtn: document.getElementById('checkUpdateBtn'),
+    drugCount: document.getElementById('drugCount'),
+    lastUpdate: document.getElementById('lastUpdate'),
+    historyList: document.getElementById('historyList'),
+    tabItems: document.querySelectorAll('.tab-item'),
+    tabPanes: document.querySelectorAll('.tab-pane'),
+    librarySearch: document.getElementById('librarySearch'),
+    openManualBtn: document.getElementById('openManual'),
+    manualSection: document.getElementById('manualSection'),
+    calculatorControls: document.getElementById('calculatorControls')
+};
+
+// ============================================
+// MOBILE LAYOUT — PATCHED VERSION
+// Layout is now controlled entirely by style.css.
+// These functions strip inline styles instead of setting them.
+// ============================================
+function setupMobileLayout() {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+        fixTabVisibility();
+        positionManualButtonInDrugGrid();
+        fixDrugSidebar();       // now just removes inline styles
+        ensureContentVisibility(); // now just removes inline styles
+        if (DOM.calculatorControls) DOM.calculatorControls.style.display = 'grid';
+        if (DOM.openManualBtn) DOM.openManualBtn.style.display = 'none';
+        removeFloatingBars();
+        setupMobileSearch();
+        setupTouchFeedback();
+        fixMethodButtonTextColor();
+        TextDirection.applyBidiFixes();
+        setupMobileNumericKeyboard();
+    } else {
+        resetDesktopLayout();
+    }
+}
+
+function clearMobileLayoutIssues() {
+    // Body layout is handled by style.css — do not override with JS
+}
+
+function fixTabVisibility() {
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        if (!pane.classList.contains('active')) {
+            pane.style.display = 'none';
+        }
+    });
+    const activePane = document.querySelector('.tab-pane.active');
+    if (activePane) activePane.style.display = 'block';
+}
+
+// PATCHED: strip all inline styles so style.css controls the sidebar
+function fixDrugSidebar() {
+    const drugSidebar = document.querySelector('.drug-sidebar');
+    if (drugSidebar) drugSidebar.removeAttribute('style');
+
+    const drugQuickSelect = document.querySelector('.drug-quick-select');
+    if (drugQuickSelect) drugQuickSelect.removeAttribute('style');
+
+    const drugScroll = document.querySelector('.drug-scroll-container');
+    if (drugScroll) drugScroll.removeAttribute('style');
+}
+
+function removeFloatingBars() {
+    const elementsToHide = [
+        '.quick-actions-enhanced', '.quick-actions', '.action-btn-enhanced', '.action-btn',
+        '.floating-bar', '.bottom-action-bar', '.overlay-bar', '#floatingBar', '#bottomBar'
+    ];
+    elementsToHide.forEach(selector => {
+        document.querySelectorAll(selector).forEach(el => {
+            el.style.display = 'none';
+            el.style.visibility = 'hidden';
+            el.style.opacity = '0';
+            el.style.position = 'absolute';
+            el.style.zIndex = '-100';
+        });
+    });
+}
+
+// PATCHED: strip inline styles so style.css controls layout heights
+function ensureContentVisibility() {
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) mainContent.removeAttribute('style');
+
+    const calculatorTab = document.getElementById('calculatorTab');
+    if (calculatorTab) calculatorTab.removeAttribute('style');
+
+    const calculatorLayout = document.querySelector('.calculator-layout');
+    if (calculatorLayout) calculatorLayout.removeAttribute('style');
+
+    const calculatorMain = document.querySelector('.calculator-main');
+    if (calculatorMain) {
+        // Only set scrolling behaviour — no height overrides
+        calculatorMain.style.overflowY = 'auto';
+        calculatorMain.style.webkitOverflowScrolling = 'touch';
+    }
+}
+
+function fixMethodButtonTextColor() {
+    document.querySelectorAll('.method-btn-compact').forEach(button => {
+        if (button.classList.contains('active')) {
+            button.style.color = 'white';
+            const icon = button.querySelector('i');
+            const text = button.querySelector('span');
+            if (icon) icon.style.color = 'white';
+            if (text) text.style.color = 'white';
+        }
+    });
+    document.querySelectorAll('.volume-preset-btn').forEach(button => {
+        if (button.classList.contains('active')) {
+            ['number', 'unit-text', 'custom-text'].forEach(cls => {
+                const el = button.querySelector('.' + cls);
+                if (el) el.style.color = 'white';
+            });
+        }
+    });
+}
+
+function positionManualButtonInDrugGrid() {
+    const drugGrid = DOM.drugGrid;
+    if (!drugGrid) return;
+
+    const existingBtn = document.getElementById('openManualMobile');
+    if (existingBtn) existingBtn.remove();
+
+    const mobileManualBtn = document.createElement('div');
+    mobileManualBtn.id = 'openManualMobile';
+    mobileManualBtn.className = 'drug-item-compact';
+    mobileManualBtn.innerHTML = `
+        <div class="drug-icon-small" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <i class="fas fa-edit" style="color: white;"></i>
+        </div>
+        <div class="drug-name-compact" style="font-size: 10px; font-weight: 700;">محاسبه دستی</div>
+    `;
+    drugGrid.appendChild(mobileManualBtn);
+    mobileManualBtn.addEventListener('click', openManualCalculation);
+    mobileManualBtn.addEventListener('touchstart', function() { this.style.transform = 'scale(0.95)'; }, { passive: true });
+    mobileManualBtn.addEventListener('touchend', function() { this.style.transform = ''; }, { passive: true });
+}
+
+function setupMobileSearch() {
+    const mobileSearchToggle = document.getElementById('mobileSearchToggle');
+    const drugSearchContainer = document.querySelector('.drug-search-container');
+    if (mobileSearchToggle && drugSearchContainer) {
+        mobileSearchToggle.addEventListener('click', () => {
+            drugSearchContainer.style.display = drugSearchContainer.style.display === 'none' ? 'block' : 'none';
+        });
+    }
+}
+
+function setupTouchFeedback() {
+    document.querySelectorAll('button, .drug-item-compact, .tab-item').forEach(element => {
+        element.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(0.97)';
+            this.style.transition = 'transform 0.1s ease';
+        }, { passive: true });
+        element.addEventListener('touchend', function() {
+            this.style.transform = '';
+        }, { passive: true });
+    });
+}
+
+function resetDesktopLayout() {
+    const mobileBtn = document.getElementById('openManualMobile');
+    if (mobileBtn) mobileBtn.remove();
+    if (DOM.openManualBtn) DOM.openManualBtn.style.display = 'flex';
+}
+
+// ============================================
+// INITIALIZATION
+// ============================================
+document.addEventListener('DOMContentLoaded', () => {
+    initializeApp();
+    setupEventListeners();
+    loadDrugGrid();
+    selectDrug('heparin');
+    initCompatibilityDropdowns();
+    loadDrugLibrary();
+});
+
+function initializeApp() {
+    // Set CSS custom property for real viewport height (fixes iOS Safari 100vh bug)
+    function setVH() {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+    setVH();
+    window.addEventListener('resize', setVH);
+
+    loadSettings();
+    loadTheme();
+    updateStats();
+    updateVolumeOptions();
+    setupMobileLayout();
+    setupMobileOptimizations();
+    setupSimpleInputHandling();
+    TextDirection.applyBidiFixes();
+    setupMobileNumericKeyboard();
+    initializeConverters();
+    initializeTools();
+
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => setupMobileLayout(), 150);
+    });
+
+    if (DOM.drugCount) DOM.drugCount.textContent = Object.keys(drugDatabase).length;
+    if (DOM.lastUpdate) {
+        const now = new Date();
+        const persianDate = new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+        DOM.lastUpdate.textContent = PersianNumbers.toLatin(persianDate);
+    }
+
+    setupManualCalculation();
+}
+
+function setupMobileOptimizations() {
+    if (window.innerWidth <= 768) {
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
+                document.body.style.zoom = '100%';
+            }
+        }, { passive: true });
+
+        const drugScroll = document.querySelector('.drug-scroll-container');
+        if (drugScroll) {
+            drugScroll.addEventListener('touchmove', function(e) { e.stopPropagation(); }, { passive: true });
+        }
+    }
+}
+
+// ============================================
+// SETTINGS
+// ============================================
+function loadSettings() {
+    const savedSettings = localStorage.getItem('appSettings');
+    if (savedSettings) AppState.settings = JSON.parse(savedSettings);
+    if (DOM.darkModeToggle) DOM.darkModeToggle.checked = AppState.settings.darkMode;
+    if (DOM.largeFontToggle) DOM.largeFontToggle.checked = AppState.settings.largeFont;
+    if (DOM.doseAlertToggle) DOM.doseAlertToggle.checked = AppState.settings.doseAlerts;
+    if (DOM.compatAlertToggle) DOM.compatAlertToggle.checked = AppState.settings.compatAlerts;
+    if (DOM.saveHistoryToggle) DOM.saveHistoryToggle.checked = AppState.settings.saveHistory;
+    applySettings();
+}
+
+function saveSettings() {
+    localStorage.setItem('appSettings', JSON.stringify(AppState.settings));
+    showToast('ذخیره شد', 'تنظیمات با موفقیت ذخیره شدند', 'success');
+}
+
+function applySettings() {
+    if (AppState.settings.darkMode) {
+        document.body.classList.add('dark-mode');
+        AppState.theme = 'dark';
+    } else {
+        document.body.classList.remove('dark-mode');
+        AppState.theme = 'light';
+    }
+    if (AppState.settings.largeFont) document.body.classList.add('large-font');
+    else document.body.classList.remove('large-font');
+
+    const icon = DOM.themeToggle?.querySelector('i');
+    if (icon) icon.className = AppState.theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+}
+
+// ============================================
+// DRUG MANAGEMENT
+// ============================================
+function loadDrugGrid() {
+    const container = DOM.drugGrid;
+    if (!container) return;
+    container.innerHTML = '';
+    Object.entries(drugDatabase).forEach(([id, drug]) => {
+        const card = document.createElement('div');
+        card.className = 'drug-item-compact';
+        card.dataset.drugId = id;
+        card.innerHTML = `
+            <div class="drug-icon-small"><i class="${drug.icon}"></i></div>
+            <div class="drug-name-compact">${drug.persianName}</div>
+            <div class="drug-name-english">${drug.englishName}</div>
+        `;
+        card.addEventListener('click', () => selectDrug(id));
+        container.appendChild(card);
+    });
+    setupMobileLayout();
+}
+
+function selectDrug(drugId) {
+    if (!drugDatabase[drugId]) return;
+    const drug = drugDatabase[drugId];
+    AppState.selectedDrug = drugId;
+    AppState.ampouleCount = drug.defaultAmpoules;
+    AppState.currentAmpouleIndex = 0;
+
+    DOM.selectedDrugName.textContent = drug.persianName;
+    DOM.selectedDrugDesc.innerHTML = `
+        <span class="persian-inline">${drug.persianName}</span>
+        <span> - </span>
+        <span class="latin-inline">${drug.englishName}</span>
+        <span> (</span><span class="latin-inline">${drug.category}</span><span>)</span>
+    `;
+    DOM.selectedDrugIcon.innerHTML = `<i class="${drug.icon}"></i>`;
+    DOM.selectedDrugIcon.style.background = `linear-gradient(135deg, ${drug.color}, ${drug.color}99)`;
+
+    updateAmpouleTypeSelector(drug);
+    updateAmpouleInfo();
+    updateVolumeOptions();
+
+    if (DOM.weightContainer && DOM.weightCheckbox && DOM.patientWeight) {
+        if (drug.weightBased && drug.weightBased.active) {
+            DOM.weightContainer.style.display = 'flex';
+            const defaultUseWeight = drug.weightBased.defaultUseWeight !== undefined ? drug.weightBased.defaultUseWeight : false;
+            AppState.useWeight = defaultUseWeight;
+            DOM.weightCheckbox.checked = defaultUseWeight;
+            DOM.patientWeight.disabled = !defaultUseWeight;
+            DOM.patientWeight.value = drug.weightBased.defaultWeight || '70';
+            DOM.patientWeight.setAttribute('inputmode', 'decimal');
+            DOM.patientWeight.style.textAlign = 'center';
+            updateWeightBasedUnit(drug);
+        } else {
+            DOM.weightContainer.style.display = 'none';
+            AppState.useWeight = false;
+            DOM.weightCheckbox.checked = false;
+            DOM.patientWeight.disabled = true;
+            DOM.patientWeight.value = '';
+            const unitElement = document.getElementById('orderUnit');
+            if (unitElement) unitElement.textContent = drug.standardUnit;
+        }
+    }
+
+    if (DOM.doctorOrder) {
+        DOM.doctorOrder.setAttribute('inputmode', 'decimal');
+        DOM.doctorOrder.style.textAlign = 'center';
+        DOM.doctorOrder.value = '';
+    }
+
+    document.querySelectorAll('.drug-item-compact').forEach(card => card.classList.remove('selected'));
+    const selectedCard = document.querySelector(`.drug-item-compact[data-drug-id="${drugId}"]`);
+    if (selectedCard) selectedCard.classList.add('selected');
+
+    clearResults();
+    if (DOM.customVolumeContainer) {
+        DOM.customVolumeContainer.style.display = 'none';
+        DOM.customVolume.value = '';
+    }
+    AppState.customVolume = false;
+}
+
+function updateAmpouleTypeSelector(drug) {
+    const container = document.getElementById('ampouleTypeButtons');
+    if (!container) return;
+    container.innerHTML = '';
+    if (drug.ampouleOptions.length <= 1) {
+        container.style.display = 'none';
+        AppState.currentAmpouleIndex = 0;
+        updateAmpouleInfo();
+        return;
+    }
+    container.style.display = 'flex';
+    drug.ampouleOptions.forEach((ampoule, index) => {
+        const button = document.createElement('button');
+        button.className = 'ampoule-type-btn';
+        button.textContent = ampoule.label;
+        button.dataset.index = index;
+        if (index === AppState.currentAmpouleIndex) button.classList.add('active');
+        button.addEventListener('click', () => {
+            container.querySelectorAll('.ampoule-type-btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            AppState.currentAmpouleIndex = index;
+            updateAmpouleInfo();
+            clearResults();
+        });
+        container.appendChild(button);
+    });
+}
+
+function updateAmpouleInfo() {
+    const drug = drugDatabase[AppState.selectedDrug];
+    const ampoule = drug.ampouleOptions[AppState.currentAmpouleIndex];
+    if (DOM.ampouleCount) DOM.ampouleCount.textContent = AppState.ampouleCount;
+    if (DOM.ampouleInfo) {
+        const labelParts = ampoule.label.split(' in ');
+        if (labelParts.length === 2) {
+            DOM.ampouleInfo.innerHTML = `<span>هر آمپول: </span><span class="latin-inline">${labelParts[0]}</span><span> در </span><span class="latin-inline">${labelParts[1]}</span>`;
+        } else {
+            DOM.ampouleInfo.innerHTML = `<span>هر آمپول: </span><span class="latin-inline">${ampoule.label}</span>`;
+        }
+    }
+}
+
+function updateVolumeOptions() {
+    const drug = drugDatabase[AppState.selectedDrug];
+    const method = AppState.infusionMethod;
+    const volumes = drug.defaultSolutionVolumes[method];
+    const defaultVol = drug.defaultVolume[method];
+    if (!DOM.volumeOptions) return;
+    DOM.volumeOptions.innerHTML = '';
+    volumes.forEach(volume => {
+        const btn = document.createElement('button');
+        btn.className = 'volume-preset-btn';
+        btn.innerHTML = `<span class="number">${volume}</span><span class="unit-text">cc</span>`;
+        btn.dataset.volume = volume;
+        if (volume === defaultVol) {
+            btn.classList.add('active');
+            AppState.solutionVolume = volume;
+        }
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.volume-preset-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            AppState.solutionVolume = volume;
+            if (DOM.customVolumeContainer) { DOM.customVolumeContainer.style.display = 'none'; DOM.customVolume.value = ''; }
+            AppState.customVolume = false;
+            clearResults();
+        });
+        DOM.volumeOptions.appendChild(btn);
+    });
+    const customBtn = document.createElement('button');
+    customBtn.className = 'volume-preset-btn';
+    customBtn.innerHTML = '<span class="custom-text">سایر</span>';
+    customBtn.addEventListener('click', () => {
+        if (DOM.customVolumeContainer) {
+            DOM.customVolumeContainer.style.display = 'flex';
+            DOM.customVolume.focus();
+            AppState.customVolume = true;
+            document.querySelectorAll('.volume-preset-btn').forEach(b => b.classList.remove('active'));
+            clearResults();
+        }
+    });
+    DOM.volumeOptions.appendChild(customBtn);
+}
+
+// ============================================
+// CALCULATION
+// ============================================
+function calculateInfusion() {
+    const drug = drugDatabase[AppState.selectedDrug];
+    const ampoule = drug.ampouleOptions[AppState.currentAmpouleIndex];
+
+    let doseValue;
+    if (DOM.doctorOrder.value && DOM.doctorOrder.value.trim() !== '') {
+        doseValue = DOM.doctorOrder.dataset.numericValue
+            ? parseFloat(DOM.doctorOrder.dataset.numericValue)
+            : PersianNumbers.parseNumber(DOM.doctorOrder.value);
+    }
+
+    if (!doseValue || isNaN(doseValue) || doseValue <= 0) {
+        showToast('خطا', 'لطفاً مقدار دوز درخواستی را وارد کنید', 'error');
+        DOM.doctorOrder.focus();
+        DOM.doctorOrder.style.borderColor = 'var(--danger)';
+        return;
+    }
+    DOM.doctorOrder.style.borderColor = '';
+
+    let desiredDosePerHour;
+
+    if (drug.weightBased && drug.weightBased.active && AppState.useWeight) {
+        let weightValue;
+        if (DOM.patientWeight.value && DOM.patientWeight.value.trim() !== '') {
+            weightValue = DOM.patientWeight.dataset.numericValue
+                ? parseFloat(DOM.patientWeight.dataset.numericValue)
+                : PersianNumbers.parseNumber(DOM.patientWeight.value);
+        }
+        if (!weightValue || isNaN(weightValue) || weightValue <= 0) {
+            showToast('خطا', 'لطفاً وزن بیمار را وارد کنید', 'error');
+            DOM.patientWeight.focus();
+            DOM.patientWeight.style.borderColor = 'var(--danger)';
+            return;
+        }
+        DOM.patientWeight.style.borderColor = '';
+        AppState.patientWeight = weightValue;
+        switch(drug.id) {
+            case 'dopamine': case 'norepinephrine': desiredDosePerHour = doseValue * weightValue * 60; break;
+            case 'fentanyl': desiredDosePerHour = doseValue * weightValue; break;
+            case 'midazolam': desiredDosePerHour = (doseValue * weightValue * 60) / 1000; break;
+            default: desiredDosePerHour = doseValue * weightValue;
+        }
+    } else {
+        AppState.patientWeight = null;
+        switch(drug.id) {
+            case 'dopamine': case 'norepinephrine': case 'tng': desiredDosePerHour = doseValue * 60; break;
+            case 'amiodarone': desiredDosePerHour = doseValue * 60; break;
+            default: desiredDosePerHour = doseValue;
+        }
+    }
+
+    if (AppState.customVolume) {
+        let customVol;
+        if (DOM.customVolume.value && DOM.customVolume.value.trim() !== '') {
+            customVol = DOM.customVolume.dataset.numericValue
+                ? parseFloat(DOM.customVolume.dataset.numericValue)
+                : PersianNumbers.parseNumber(DOM.customVolume.value);
+        }
+        if (!customVol || isNaN(customVol) || customVol <= 0) {
+            showToast('خطا', 'حجم محلول وارد شده معتبر نیست', 'error');
+            DOM.customVolume.focus();
+            return;
+        }
+        AppState.solutionVolume = customVol;
+    }
+
+    AppState.desiredDose = doseValue;
+    const totalDrug = AppState.ampouleCount * ampoule.strength;
+    const concentration = totalDrug / AppState.solutionVolume;
+
+    let totalDrugForCalculation = totalDrug;
+    let concentrationForCalculation = concentration;
+    let desiredDoseForCalculation = desiredDosePerHour;
+
+    if (drug.id === 'norepinephrine' || drug.id === 'dopamine' || drug.id === 'fentanyl' || drug.id === 'tng') {
+        totalDrugForCalculation = totalDrug * 1000;
+        concentrationForCalculation = totalDrugForCalculation / AppState.solutionVolume;
+    }
+
+    const pumpRate = desiredDoseForCalculation / concentrationForCalculation;
+    const duration = AppState.solutionVolume / pumpRate;
+
+    displayResults(totalDrug, concentration, pumpRate, duration, ampoule.unit);
+    generateStepByStepGuide(drug, totalDrug, concentration, pumpRate, doseValue);
+    displayWarnings(drug);
+    displayCompatibility(drug);
+
+    if (AppState.settings.saveHistory) saveCalculation(totalDrug, concentration, pumpRate, duration);
+    updateCalculationStats();
+    showToast('موفق', 'محاسبه با موفقیت انجام شد', 'success');
+}
+
+function displayResults(totalDrug, concentration, pumpRate, duration, unit) {
+    const drug = drugDatabase[AppState.selectedDrug];
+    DOM.totalDrugAmount.textContent = PersianNumbers.formatNumber(totalDrug, 0);
+    DOM.totalDrugUnit.innerHTML = `<span class="latin-inline">${unit}</span>`;
+
+    let concentrationDisplay, concentrationUnitDisplay;
+    if (drug.id === 'norepinephrine' || drug.id === 'dopamine' || drug.id === 'fentanyl' || drug.id === 'tng') {
+        concentrationDisplay = PersianNumbers.formatNumber(concentration * 1000, 2);
+        concentrationUnitDisplay = 'mcg/cc';
+    } else {
+        concentrationDisplay = PersianNumbers.formatNumber(concentration, 2);
+        concentrationUnitDisplay = `${unit}/cc`;
+    }
+    DOM.concentrationResult.textContent = concentrationDisplay;
+    DOM.concentrationUnit.innerHTML = `<span class="latin-inline">${concentrationUnitDisplay}</span>`;
+    DOM.pumpRateResult.textContent = PersianNumbers.formatNumber(pumpRate, 2);
+    DOM.pumpRateUnit.innerHTML = `<span class="latin-inline">cc/hour</span>`;
+    DOM.durationResult.textContent = PersianNumbers.formatNumber(duration, 1);
+    DOM.durationUnit.innerHTML = `<span class="persian-inline">ساعت</span>`;
+
+    if (DOM.resultsSection) {
+        DOM.resultsSection.classList.add('show');
+        DOM.resultsSection.style.display = 'block';
+        setTimeout(() => DOM.resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+    }
+}
+
+function clearResults() {
+    if (DOM.resultsSection) { DOM.resultsSection.classList.remove('show'); DOM.resultsSection.style.display = 'none'; }
+    if (DOM.guideSection) DOM.guideSection.style.display = 'none';
+    if (DOM.warningsSection) DOM.warningsSection.style.display = 'none';
+    if (DOM.compatibilitySection) DOM.compatibilitySection.style.display = 'none';
+}
+
+function generateStepByStepGuide(drug, totalDrug, concentration, pumpRate, desiredDose) {
+    if (!DOM.guideSection || !DOM.stepByStepGuide) return;
+    DOM.stepByStepGuide.innerHTML = '';
+    const steps = [
+        `۱. آماده کردن ${AppState.ampouleCount} آمپول ${drug.persianName}`,
+        `۲. کشیدن ${AppState.solutionVolume} cc محلول ${drug.solutionType[0]} به سرنگ/کیسه`,
+        `۳. اضافه کردن ${PersianNumbers.formatNumber(totalDrug, 0)} ${drug.ampouleOptions[0].unit} از دارو به محلول`,
+        `۴. مخلوط کردن کامل محلول`,
+        `۵. نصب سرنگ/کیسه بر روی پمپ ${AppState.infusionMethod === 'syringe' ? 'سرنگ' : 'انفوزیون'}`,
+        `۶. تنظیم سرعت پمپ بر روی ${PersianNumbers.formatNumber(pumpRate, 2)} cc/hour`,
+        `۷. شروع تزریق با دوز ${PersianNumbers.formatNumber(desiredDose, 2)} ${drug.standardUnit}`
+    ];
+    steps.forEach(step => {
+        const stepDiv = document.createElement('div');
+        stepDiv.className = 'guide-step';
+        stepDiv.innerHTML = `<div class="step-content">${step}</div>`;
+        DOM.stepByStepGuide.appendChild(stepDiv);
+    });
+    DOM.guideSection.style.display = 'block';
+}
+
+function displayWarnings(drug) {
+    if (!DOM.warningsSection || !DOM.warningsList || !drug.cautions) return;
+    DOM.warningsList.innerHTML = '';
+    drug.cautions.forEach(caution => {
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'warning-item';
+        warningDiv.innerHTML = `<i class="fas fa-exclamation-circle warning-icon"></i><span class="warning-text">${caution}</span>`;
+        DOM.warningsList.appendChild(warningDiv);
+    });
+    DOM.warningsSection.style.display = 'block';
+}
+
+function displayCompatibility(drug) {
+    if (!DOM.compatibilitySection || !DOM.compatibleDrugsList || !DOM.incompatibleDrugsList) return;
+    DOM.compatibleDrugsList.innerHTML = '';
+    DOM.incompatibleDrugsList.innerHTML = '';
+    if (drug.ySiteCompatibilities) {
+        drug.ySiteCompatibilities.compatible.forEach(drugName => {
+            const item = document.createElement('div');
+            item.textContent = drugName;
+            item.className = 'persian-text';
+            DOM.compatibleDrugsList.appendChild(item);
+        });
+        drug.ySiteCompatibilities.incompatible.forEach(drugName => {
+            const item = document.createElement('div');
+            item.textContent = drugName;
+            item.className = 'persian-text';
+            DOM.incompatibleDrugsList.appendChild(item);
+        });
+    }
+    DOM.compatibilitySection.style.display = 'block';
+}
+
+function updateWeightBasedUnit(drug) {
+    const unitElement = document.getElementById('orderUnit');
+    if (!unitElement || !drug.weightBased) return;
+    unitElement.textContent = AppState.useWeight ? drug.weightBased.unit : (drug.weightBased.nonWeightUnit || drug.standardUnit);
+    clearResults();
+}
+
+// ============================================
+// EVENT LISTENERS
+// ============================================
+function setupEventListeners() {
+    if (DOM.themeToggle) DOM.themeToggle.addEventListener('click', toggleTheme);
+
+    if (DOM.historyBtn) DOM.historyBtn.addEventListener('click', () => {
+        loadHistory();
+        if (DOM.historyModal) { DOM.historyModal.classList.add('active'); document.body.classList.add('no-scroll'); }
+    });
+
+    if (DOM.settingsBtn) DOM.settingsBtn.addEventListener('click', () => {
+        if (DOM.settingsModal) { DOM.settingsModal.classList.add('active'); document.body.classList.add('no-scroll'); }
+    });
+
+    if (DOM.tabItems) DOM.tabItems.forEach(btn => btn.addEventListener('click', function() { switchTab(this.dataset.tab); }));
+
+    if (DOM.methodBtns) DOM.methodBtns.forEach(btn => btn.addEventListener('click', function() {
+        DOM.methodBtns.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        AppState.infusionMethod = this.dataset.method;
+        fixMethodButtonTextColor();
+        updateVolumeOptions();
+        clearResults();
+    }));
+
+    if (DOM.decreaseAmpoule) DOM.decreaseAmpoule.addEventListener('click', () => {
+        if (AppState.ampouleCount > 1) { AppState.ampouleCount--; updateAmpouleInfo(); clearResults(); }
+    });
+
+    if (DOM.increaseAmpoule) DOM.increaseAmpoule.addEventListener('click', () => {
+        const drug = drugDatabase[AppState.selectedDrug];
+        const maxAmpoules = Math.floor(1000 / drug.ampouleOptions[0].strength) || 20;
+        if (AppState.ampouleCount < maxAmpoules) { AppState.ampouleCount++; updateAmpouleInfo(); clearResults(); }
+    });
+
+    if (DOM.weightCheckbox && DOM.patientWeight) {
+        DOM.weightCheckbox.addEventListener('change', function() {
+            AppState.useWeight = this.checked;
+            DOM.patientWeight.disabled = !this.checked;
+            const drug = drugDatabase[AppState.selectedDrug];
+            updateWeightBasedUnit(drug);
+            if (this.checked && DOM.patientWeight) DOM.patientWeight.focus();
+            clearResults();
+            if (this.checked) showToast('اطلاع', 'محاسبه بر اساس وزن فعال شد', 'info');
+        });
+    }
+
+    if (DOM.customVolume) {
+        DOM.customVolume.setAttribute('inputmode', 'numeric');
+        DOM.customVolume.setAttribute('pattern', '[0-9]*');
+        DOM.customVolume.style.textAlign = 'center';
+    }
+
+    if (DOM.calculateBtn) DOM.calculateBtn.addEventListener('click', calculateInfusion);
+
+    if (DOM.doctorOrder) {
+        DOM.doctorOrder.addEventListener('input', () => clearResults());
+        DOM.doctorOrder.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); calculateInfusion(); } });
+    }
+
+    if (DOM.closeSettings) DOM.closeSettings.addEventListener('click', () => {
+        if (DOM.settingsModal) { DOM.settingsModal.classList.remove('active'); document.body.classList.remove('no-scroll'); }
+    });
+
+    if (DOM.closeHistory) DOM.closeHistory.addEventListener('click', () => {
+        if (DOM.historyModal) { DOM.historyModal.classList.remove('active'); document.body.classList.remove('no-scroll'); }
+    });
+
+    if (DOM.drugSearch) DOM.drugSearch.addEventListener('input', function() {
+        const term = this.value.toLowerCase();
+        document.querySelectorAll('.drug-item-compact').forEach(card => {
+            const drugId = card.dataset.drugId;
+            const drug = drugDatabase[drugId];
+            if (!drug) return;
+            const searchText = [drug.persianName, drug.englishName, drug.category, ...(drug.alternativeNames || [])].join(' ').toLowerCase();
+            card.style.display = searchText.includes(term) ? 'flex' : 'none';
+        });
+    });
+
+    if (DOM.librarySearch) DOM.librarySearch.addEventListener('input', function() {
+        const term = this.value.toLowerCase();
+        document.querySelectorAll('.drug-library-card').forEach(card => {
+            const drugName = card.querySelector('.drug-library-title')?.textContent || '';
+            const englishName = card.querySelector('.drug-library-english')?.textContent || '';
+            card.style.display = (drugName + ' ' + englishName).toLowerCase().includes(term) ? 'block' : 'none';
+        });
+    });
+
+    setupSettingsEventListeners();
+    window.addEventListener('resize', () => setupMobileLayout());
+
+    // Enter key in converter/tool inputs
+    document.querySelectorAll('.converter-body input, .tool-body input').forEach(input => {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const card = input.closest('.converter-card, .tool-card');
+                const button = card?.querySelector('.converter-btn, .tool-btn');
+                if (button) button.click();
+            }
+        });
+    });
+}
+
+function setupSettingsEventListeners() {
+    if (DOM.darkModeToggle) DOM.darkModeToggle.addEventListener('change', function() { AppState.settings.darkMode = this.checked; saveSettings(); applySettings(); });
+    if (DOM.largeFontToggle) DOM.largeFontToggle.addEventListener('change', function() { AppState.settings.largeFont = this.checked; saveSettings(); applySettings(); });
+    if (DOM.doseAlertToggle) DOM.doseAlertToggle.addEventListener('change', function() { AppState.settings.doseAlerts = this.checked; saveSettings(); });
+    if (DOM.compatAlertToggle) DOM.compatAlertToggle.addEventListener('change', function() { AppState.settings.compatAlerts = this.checked; saveSettings(); });
+    if (DOM.saveHistoryToggle) DOM.saveHistoryToggle.addEventListener('change', function() { AppState.settings.saveHistory = this.checked; saveSettings(); });
+    if (DOM.clearHistoryBtn) DOM.clearHistoryBtn.addEventListener('click', function() {
+        if (confirm('آیا از پاک کردن تاریخچه اطمینان دارید؟')) {
+            localStorage.removeItem('calculationHistory');
+            showToast('تاریخچه پاک شد', 'تمامی محاسبات ذخیره شده حذف شدند.', 'success');
+        }
+    });
+    if (DOM.exportDataBtn) DOM.exportDataBtn.addEventListener('click', function() { showToast('اطلاع', 'این ویژگی در نسخه بعدی اضافه خواهد شد', 'info'); });
+    if (DOM.checkUpdateBtn) DOM.checkUpdateBtn.addEventListener('click', function() { showToast('بررسی به‌روزرسانی', 'نسخه فعلی 2.0.1 آخرین نسخه موجود است.', 'info'); });
+}
+
+// ============================================
+// MANUAL CALCULATION – COMPLETELY FIXED UI & LOGIC
+// ============================================
+function createManualCalculationContent() {
+    const manualSection = document.getElementById('manualSection');
+    if (!manualSection) return;
+    manualSection.innerHTML = `
+        <div class="manual-header">
+            <h3><i class="fas fa-edit"></i> محاسبه دستی دارو (از روی آمپول/ویال)</h3>
+            <button class="icon-btn" id="closeManualBtn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="manual-controls">
+            <div class="control-group">
+                <label><i class="fas fa-pills"></i> نام دارو (اختیاری)</label>
+                <input type="text" id="manualDrugName" placeholder="مثال: دوپامین، هپارین" style="text-align: right;">
+            </div>
+            <div class="manual-inputs-grid">
+                <div class="control-group">
+                    <label><i class="fas fa-vial"></i> مقدار ماده مؤثر</label>
+                    <div class="manual-input-with-unit">
+                        <input type="number" id="manualStrength" placeholder="مقدار" step="any" value="5000">
+                        <select id="manualStrengthUnit">
+                            <option value="mg">mg</option>
+                            <option value="mcg">mcg</option>
+                            <option value="g">g</option>
+                            <option value="units">واحد</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label><i class="fas fa-syringe"></i> حجم آمپول (ml)</label>
+                    <input type="number" id="manualVialVolume" placeholder="حجم" step="any" value="1">
+                </div>
+                <div class="control-group">
+                    <label><i class="fas fa-cubes"></i> تعداد آمپول</label>
+                    <div class="ampoule-control-enhanced">
+                        <button class="ampoule-btn-enhanced" id="manualDecreaseAmpoule"><i class="fas fa-minus"></i></button>
+                        <div class="ampoule-count-enhanced"><span id="manualAmpouleCount">1</span><small>عدد</small></div>
+                        <button class="ampoule-btn-enhanced" id="manualIncreaseAmpoule"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label><i class="fas fa-flask"></i> حجم محلول (ml)</label>
+                    <input type="number" id="manualSolutionVolume" placeholder="حجم نهایی" step="any" value="50">
+                </div>
+                <div class="control-group">
+                    <label><i class="fas fa-file-medical-alt"></i> دوز درخواستی</label>
+                    <div class="dose-input-wrapper">
+                        <input type="number" id="manualDesiredDose" placeholder="دوز" step="any" value="1000">
+                        <select class="dose-unit-enhanced" id="manualDoseUnit" style="position:static; transform:none; background: var(--gradient-primary); color:white; padding:4px 8px; border-radius:6px;">
+                            <option value="units/hour">واحد/ساعت</option>
+                            <option value="mg/hour">mg/hour</option>
+                            <option value="mcg/hour">mcg/hour</option>
+                            <option value="mg/min">mg/min</option>
+                            <option value="mcg/min">mcg/min</option>
+                            <option value="mcg/kg/min">mcg/kg/min</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label><i class="fas fa-weight-scale"></i> وزن بیمار (kg) – در صورت نیاز</label>
+                    <input type="number" id="manualPatientWeight" placeholder="وزن" step="any" value="70">
+                </div>
+            </div>
+            <button class="calculate-btn-enhanced" id="manualCalculateBtn"><i class="fas fa-calculator"></i><span>محاسبه سرعت پمپ (ml/hr)</span></button>
+            <div class="manual-results" id="manualResults" style="display: none;">
+                <h4><i class="fas fa-chart-line"></i> نتایج محاسبه دستی</h4>
+                <div class="results-grid-enhanced" style="grid-template-columns: 1fr 1fr;">
+                    <div class="result-item-enhanced"><div class="result-label-enhanced">غلظت محلول</div><div class="result-value-enhanced" id="manualConcentration">0</div><div class="result-unit-enhanced" id="manualConcentrationUnit">mg/ml</div></div>
+                    <div class="result-item-enhanced highlight"><div class="result-label-enhanced">سرعت پمپ</div><div class="result-value-enhanced" id="manualPumpRate">0</div><div class="result-unit-enhanced">ml/hour</div></div>
+                </div>
+                <div id="manualExtraInfo" class="secondary" style="margin-top: 10px; text-align: center;"></div>
+            </div>
+        </div>
+    `;
+    setupManualCalculationFunctionality();
+}
+
+function setupManualCalculationFunctionality() {
+    // Ampoule counters
+    let ampCount = 1;
+    const ampSpan = document.getElementById('manualAmpouleCount');
+    document.getElementById('manualDecreaseAmpoule').addEventListener('click', () => { if (ampCount > 1) { ampCount--; ampSpan.textContent = ampCount; } });
+    document.getElementById('manualIncreaseAmpoule').addEventListener('click', () => { if (ampCount < 50) { ampCount++; ampSpan.textContent = ampCount; } });
+    document.getElementById('manualCalculateBtn').addEventListener('click', calculateManualInfusion);
+    document.getElementById('closeManualBtn').addEventListener('click', () => {
+        document.getElementById('manualSection').style.display = 'none';
+        document.getElementById('calculatorControls').style.display = 'grid';
+        const drugHeader = document.querySelector('.selected-drug-compact');
+        if (drugHeader) drugHeader.style.display = 'flex';
+        const drugSidebar = document.querySelector('.drug-sidebar');
+        if (drugSidebar && window.innerWidth < 768) drugSidebar.removeAttribute('style');
+    });
+}
+
+function calculateManualInfusion() {
+    // Get values
+    const strength = parseFloat(document.getElementById('manualStrength').value);
+    const strengthUnit = document.getElementById('manualStrengthUnit').value;
+    const vialVolume = parseFloat(document.getElementById('manualVialVolume').value);
+    const ampouleCount = parseInt(document.getElementById('manualAmpouleCount').textContent);
+    const solutionVolume = parseFloat(document.getElementById('manualSolutionVolume').value);
+    let desiredDose = parseFloat(document.getElementById('manualDesiredDose').value);
+    const doseUnit = document.getElementById('manualDoseUnit').value;
+    let patientWeight = parseFloat(document.getElementById('manualPatientWeight').value) || 0;
+
+    // Validation
+    if (isNaN(strength) || strength <= 0) { showToast('خطا', 'مقدار ماده مؤثر را به درستی وارد کنید', 'error'); return; }
+    if (isNaN(vialVolume) || vialVolume <= 0) { showToast('خطا', 'حجم آمپول معتبر نیست', 'error'); return; }
+    if (isNaN(solutionVolume) || solutionVolume <= 0) { showToast('خطا', 'حجم محلول نهایی معتبر نیست', 'error'); return; }
+    if (isNaN(desiredDose) || desiredDose <= 0) { showToast('خطا', 'دوز درخواستی را وارد کنید', 'error'); return; }
+
+    // Convert strength to mg (base unit)
+    let strengthMg = strength;
+    if (strengthUnit === 'mcg') strengthMg = strength / 1000;
+    else if (strengthUnit === 'g') strengthMg = strength * 1000;
+    else if (strengthUnit === 'units') { /* keep as units, but we need consistency; for now, treat units as is */ }
+    // For units, we keep as units – but dose must also be in units. We'll handle later.
+
+    const totalDrug = ampouleCount * strength;
+    const concentration = totalDrug / solutionVolume; // units per ml
+
+    // Convert desired dose to per hour and to same unit as concentration
+    let desiredPerHour = desiredDose;
+    let doseInUnits = desiredDose;
+
+    // Handle time unit
+    if (doseUnit.includes('/min')) desiredPerHour = desiredDose * 60;
+    else desiredPerHour = desiredDose;
+
+    // Handle weight-based
+    if (doseUnit.includes('/kg/') && patientWeight > 0) {
+        desiredPerHour = desiredPerHour * patientWeight;
+    }
+
+    // Now desiredPerHour is in (units or mg or mcg) per hour.
+    // Need to ensure same unit as concentration.
+    let concentrationInSameUnit = concentration;
+    let desiredInSameUnit = desiredPerHour;
+
+    // If strengthUnit is 'units' and doseUnit contains 'mg', incompatible – but we show warning
+    if (strengthUnit === 'units' && (doseUnit.includes('mg') || doseUnit.includes('mcg'))) {
+        showToast('هشدار', 'واحد دوز با واحد آمپول هماهنگ نیست. نتیجه ممکن است اشتباه باشد.', 'warning');
+    } else if ((strengthUnit === 'mg' || strengthUnit === 'mcg' || strengthUnit === 'g') && doseUnit.includes('units')) {
+        showToast('هشدار', 'واحد دوز با واحد آمپول هماهنگ نیست. نتیجه ممکن است اشتباه باشد.', 'warning');
+    }
+
+    // Calculate pump rate (ml/hr)
+    let pumpRate = desiredInSameUnit / concentrationInSameUnit;
+    if (isNaN(pumpRate) || !isFinite(pumpRate)) pumpRate = 0;
+
+    // Display results
+    document.getElementById('manualConcentration').textContent = concentration.toFixed(2);
+    let concUnit = (strengthUnit === 'units') ? 'units/ml' : `${strengthUnit}/ml`;
+    document.getElementById('manualConcentrationUnit').innerHTML = `<span class="latin-inline">${concUnit}</span>`;
+    document.getElementById('manualPumpRate').textContent = pumpRate.toFixed(2);
+    const extraInfo = `دوز نهایی محاسبه‌شده: ${desiredInSameUnit.toFixed(2)} ${doseUnit.replace('/kg/','/kg/')} | غلظت: ${concentration.toFixed(2)} ${concUnit}`;
+    document.getElementById('manualExtraInfo').innerHTML = extraInfo;
+    document.getElementById('manualResults').style.display = 'block';
+    showToast('موفق', 'محاسبه دستی انجام شد', 'success');
+}
+
+// ============================================
+// TAB MANAGEMENT
+// ============================================
+function switchTab(tabName) {
+    DOM.tabItems.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabName));
+    DOM.tabPanes.forEach(pane => {
+        const isActive = pane.id === tabName + 'Tab';
+        pane.classList.toggle('active', isActive);
+        pane.style.display = isActive ? 'block' : 'none';
+    });
+    AppState.currentTab = tabName;
+    if (tabName === 'drugs') loadDrugLibrary();
+}
+
+// ============================================
+// THEME
+// ============================================
+function toggleTheme() {
+    AppState.theme = AppState.theme === 'light' ? 'dark' : 'light';
+    document.body.classList.toggle('dark-mode', AppState.theme === 'dark');
+    AppState.settings.darkMode = AppState.theme === 'dark';
+    saveSettings();
+    const icon = DOM.themeToggle.querySelector('i');
+    if (icon) icon.className = AppState.theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    localStorage.setItem('theme', AppState.theme);
+}
+
+function loadTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    AppState.theme = savedTheme;
+    document.body.classList.toggle('dark-mode', AppState.theme === 'dark');
+    const icon = DOM.themeToggle?.querySelector('i');
+    if (icon) icon.className = AppState.theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+}
+
+// ============================================
+// CONVERTERS
+// ============================================
+function initializeConverters() {
+    const defaults = { electrolyteValue:'100', percentageValue:'5', percentageVolume:'100', unitValue:'1000', dripVolume:'1000', dripTime:'8' };
+    Object.entries(defaults).forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val; });
+    ['electrolyteValue','percentageValue','percentageVolume','unitValue','dripVolume','dripTime'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) { input.setAttribute('inputmode', 'decimal'); input.style.textAlign = 'center'; }
+    });
+}
+
+function convertElectrolyte() {
+    const element = document.getElementById('electrolyteElement').value;
+    const value = PersianNumbers.parseNumber(document.getElementById('electrolyteValue').value);
+    const fromUnit = document.getElementById('electrolyteFrom').value;
+    if (!value || isNaN(value)) { showToast('خطا', 'لطفاً مقدار را وارد کنید', 'error'); return; }
+    const conversions = { sodium: 23, potassium: 39, calcium: 20, magnesium: 12 };
+    let result;
+    if (fromUnit === 'mEq') {
+        result = `${PersianNumbers.formatNumber(value * conversions[element], 2)} میلی‌گرم`;
+    } else {
+        result = `${PersianNumbers.formatNumber(value / conversions[element], 2)} mEq`;
+    }
+    document.getElementById('electrolyteResult').innerHTML = `<span class="latin-inline">${result}</span>`;
+}
+
+function convertPercentage() {
+    const percent = PersianNumbers.parseNumber(document.getElementById('percentageValue').value);
+    const volume = PersianNumbers.parseNumber(document.getElementById('percentageVolume').value);
+    if (!percent || !volume || isNaN(percent) || isNaN(volume)) { showToast('خطا', 'لطفاً مقادیر را وارد کنید', 'error'); return; }
+    const grams = (percent / 100) * volume;
+    document.getElementById('percentageResult').innerHTML = `<span class="latin-inline">${PersianNumbers.formatNumber(grams, 2)} g in ${PersianNumbers.formatNumber(volume, 0)} ml</span>`;
+}
+
+function convertUnits() {
+    const fromUnit = document.getElementById('unitFrom').value;
+    const toUnit = document.getElementById('unitTo').value;
+    const value = PersianNumbers.parseNumber(document.getElementById('unitValue').value);
+    if (!value || isNaN(value)) { showToast('خطا', 'لطفاً مقدار را وارد کنید', 'error'); return; }
+    const toMg = { mcg: 0.001, mg: 1, g: 1000, units: 0.0347 };
+    const fromMg = { mcg: 1000, mg: 1, g: 0.001, units: 1 / 0.0347 };
+    const result = value * toMg[fromUnit] * fromMg[toUnit];
+    document.getElementById('unitResult').innerHTML = `<span class="latin-inline">${PersianNumbers.formatNumber(result, 4)} ${toUnit}</span>`;
+}
+
+function calculateDripRate() {
+    const volume = PersianNumbers.parseNumber(document.getElementById('dripVolume').value);
+    const time = PersianNumbers.parseNumber(document.getElementById('dripTime').value);
+    const factor = PersianNumbers.parseNumber(document.getElementById('dripFactor').value);
+    if (!volume || !time || !factor || isNaN(volume) || isNaN(time) || isNaN(factor)) { showToast('خطا', 'لطفاً تمامی مقادیر را وارد کنید', 'error'); return; }
+    const dropsPerMinute = (volume / time * factor) / 60;
+    document.getElementById('dripResult').innerHTML = `<span class="latin-inline">${PersianNumbers.formatNumber(dropsPerMinute, 1)} drops/min</span>`;
+}
+
+// ============================================
+// TOOLS
+// ============================================
+function initializeTools() {
+    const defaults = { bmiWeight:'70', bmiHeight:'170', bsaWeight:'70', bsaHeight:'170', ibwHeight:'170', crclAge:'40', crclWeight:'70', crclValue:'1.0', doseNeeded:'100', doseConcentration:'10', doseVialVolume:'10' };
+    Object.entries(defaults).forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val; });
+}
+
+function calculateBMI() {
+    const weight = PersianNumbers.parseNumber(document.getElementById('bmiWeight').value);
+    const height = PersianNumbers.parseNumber(document.getElementById('bmiHeight').value);
+    if (!weight || !height) { showToast('خطا', 'لطفاً وزن و قد را وارد کنید', 'error'); return; }
+    const bmi = weight / Math.pow(height / 100, 2);
+    let cat = bmi < 18.5 ? 'کمبود وزن' : bmi < 25 ? 'طبیعی' : bmi < 30 ? 'اضافه وزن' : 'چاقی';
+    document.getElementById('bmiResult').innerHTML = `<span class="latin-inline">BMI: ${PersianNumbers.formatNumber(bmi, 1)}</span><span> (${cat})</span>`;
+}
+
+function calculateBSA() {
+    const weight = PersianNumbers.parseNumber(document.getElementById('bsaWeight').value);
+    const height = PersianNumbers.parseNumber(document.getElementById('bsaHeight').value);
+    const formula = document.getElementById('bsaFormula').value;
+    if (!weight || !height) { showToast('خطا', 'لطفاً وزن و قد را وارد کنید', 'error'); return; }
+    let bsa;
+    if (formula === 'mosteller') bsa = Math.sqrt((weight * height) / 3600);
+    else if (formula === 'dubois') bsa = 0.007184 * Math.pow(weight, 0.425) * Math.pow(height, 0.725);
+    else bsa = 0.024265 * Math.pow(weight, 0.5378) * Math.pow(height, 0.3964);
+    document.getElementById('bsaResult').innerHTML = `<span class="latin-inline">${PersianNumbers.formatNumber(bsa, 3)} m²</span>`;
+}
+
+function calculateIBW() {
+    const height = PersianNumbers.parseNumber(document.getElementById('ibwHeight').value);
+    const gender = document.getElementById('ibwGender').value;
+    const formula = document.getElementById('ibwFormula').value;
+    if (!height) { showToast('خطا', 'لطفاً قد را وارد کنید', 'error'); return; }
+    const hIn = height / 2.54;
+    let ibw;
+    if (formula === 'devine') ibw = gender === 'male' ? 50 + 2.3 * (hIn - 60) : 45.5 + 2.3 * (hIn - 60);
+    else if (formula === 'robinson') ibw = gender === 'male' ? 52 + 1.9 * (hIn - 60) : 49 + 1.7 * (hIn - 60);
+    else ibw = gender === 'male' ? 56.2 + 1.41 * (hIn - 60) : 53.1 + 1.36 * (hIn - 60);
+    document.getElementById('ibwResult').innerHTML = `<span class="latin-inline">${PersianNumbers.formatNumber(ibw, 1)} kg</span>`;
+}
+
+function calculateCrCl() {
+    const age = PersianNumbers.parseNumber(document.getElementById('crclAge').value);
+    const weight = PersianNumbers.parseNumber(document.getElementById('crclWeight').value);
+    const creatinine = PersianNumbers.parseNumber(document.getElementById('crclValue').value);
+    const gender = document.getElementById('crclGender').value;
+    if (!age || !weight || !creatinine) { showToast('خطا', 'لطفاً تمامی مقادیر را وارد کنید', 'error'); return; }
+    let crcl = ((140 - age) * weight) / (72 * creatinine);
+    if (gender === 'female') crcl *= 0.85;
+    let fn = crcl > 90 ? 'طبیعی' : crcl > 60 ? 'کاهش خفیف' : crcl > 30 ? 'کاهش متوسط' : crcl > 15 ? 'کاهش شدید' : 'نارسایی کلیه';
+    document.getElementById('crclResult').innerHTML = `<span class="latin-inline">${PersianNumbers.formatNumber(crcl, 0)} ml/min</span><span> (${fn})</span>`;
+}
+
+function checkCompatibility() {
+    const drug1 = document.getElementById('compatDrug1').value;
+    const drug2 = document.getElementById('compatDrug2').value;
+    const solution = document.getElementById('compatSolution').value;
+    if (!drug1 || !drug2) { showToast('خطا', 'لطفاً هر دو دارو را انتخاب کنید', 'error'); return; }
+    if (drug1 === drug2) { document.getElementById('compatResult').innerHTML = `<span>داروهای یکسان انتخاب شده‌اند</span>`; return; }
+    const d1 = drugDatabase[drug1], d2 = drugDatabase[drug2];
+    if (!d1 || !d2) { document.getElementById('compatResult').textContent = 'اطلاعات دارو یافت نشد'; return; }
+    const d1sol = d1.solutionType.includes(solution);
+    const d2sol = d2.solutionType.includes(solution);
+    if (!d1sol || !d2sol) {
+        const n = !d1sol ? d1.persianName : d2.persianName;
+        document.getElementById('compatResult').innerHTML = `<span>${n} با محلول ${solution} سازگار نیست</span>`;
+        return;
+    }
+    const compatible = [['heparin','fentanyl'],['heparin','midazolam'],['furosemide','dopamine']];
+    const isCompat = compatible.some(p => (p[0]===drug1&&p[1]===drug2)||(p[0]===drug2&&p[1]===drug1));
+    document.getElementById('compatResult').innerHTML = isCompat
+        ? `<span>${d1.persianName} و ${d2.persianName} سازگار هستند</span>`
+        : `<span>${d1.persianName} و ${d2.persianName} نیاز به بررسی بیشتر دارند</span>`;
+}
+
+function calculateDose() {
+    const needed = PersianNumbers.parseNumber(document.getElementById('doseNeeded').value);
+    const concentration = PersianNumbers.parseNumber(document.getElementById('doseConcentration').value);
+    const vialVolume = PersianNumbers.parseNumber(document.getElementById('doseVialVolume').value);
+    if (!needed || !concentration || !vialVolume) { showToast('خطا', 'لطفاً تمامی مقادیر را وارد کنید', 'error'); return; }
+    if (concentration === 0) { showToast('خطا', 'غلظت نمی‌تواند صفر باشد', 'error'); return; }
+    const volumeNeeded = needed / concentration;
+    const vialsNeeded = Math.ceil(volumeNeeded / vialVolume);
+    document.getElementById('doseResult').innerHTML = volumeNeeded <= vialVolume
+        ? `<span class="latin-inline">${PersianNumbers.formatNumber(volumeNeeded, 1)} ml (۱ ویال)</span>`
+        : `<span class="latin-inline">${PersianNumbers.formatNumber(volumeNeeded, 1)} ml (${vialsNeeded} ویال)</span>`;
+}
+
+function initCompatibilityDropdowns() {
+    const s1 = document.getElementById('compatDrug1'), s2 = document.getElementById('compatDrug2');
+    if (!s1 || !s2) return;
+    s1.innerHTML = '<option value="">انتخاب دارو</option>';
+    s2.innerHTML = '<option value="">انتخاب دارو</option>';
+    Object.entries(drugDatabase).forEach(([id, drug]) => {
+        [s1, s2].forEach(sel => {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = `${drug.persianName} (${drug.englishName})`;
+            sel.appendChild(opt);
+        });
+    });
+}
+
+// ============================================
+// DRUG LIBRARY
+// ============================================
+function loadDrugLibrary() {
+    const container = document.getElementById('drugLibrary');
+    if (!container || container.children.length > 0) return;
+    Object.values(drugDatabase).forEach(drug => {
+        const card = document.createElement('div');
+        card.className = 'drug-library-card';
+        card.innerHTML = `
+            <div class="drug-library-header">
+                <div>
+                    <div class="drug-library-title">${drug.persianName}</div>
+                    <div class="drug-library-english">${drug.englishName}</div>
+                </div>
+                <div style="color: ${drug.color}; font-size: 1.5rem;"><i class="${drug.icon}"></i></div>
+            </div>
+            <div class="drug-library-body">
+                <div class="drug-library-info">
+                    <div class="drug-library-row"><span class="drug-library-label">دسته:</span><span class="drug-library-value">${drug.category || '--'}</span></div>
+                    <div class="drug-library-row"><span class="drug-library-label">دوز معمول:</span><span class="drug-library-value">${drug.typicalDoseRange ? `${drug.typicalDoseRange.min}–${drug.typicalDoseRange.max} ${drug.typicalDoseRange.unit}` : '--'}</span></div>
+                    <div class="drug-library-row"><span class="drug-library-label">محلول:</span><span class="drug-library-value">${drug.solutionType.join(', ')}</span></div>
+                    <div class="drug-library-row"><span class="drug-library-label">آمپول:</span><span class="drug-library-value">${drug.ampouleOptions[0].label}</span></div>
+                </div>
+                <div class="drug-library-actions">
+                    <button class="drug-library-btn" onclick="selectDrug('${drug.id}'); switchTab('calculator')"><i class="fas fa-calculator"></i> محاسبه</button>
+                    <button class="drug-library-btn secondary expand-btn" data-drug-id="${drug.id}"><i class="fas fa-info-circle"></i> جزئیات</button>
+                </div>
+                <div class="drug-library-details" id="details-${drug.id}"></div>
+            </div>
+        `;
+        container.appendChild(card);
+        card.querySelector('.expand-btn').addEventListener('click', function(e) { e.stopPropagation(); toggleDrugDetails(drug.id, card); });
+    });
+}
+
+function toggleDrugDetails(drugId, card) {
+    const detailsContainer = card.querySelector('.drug-library-details');
+    const expandBtn = card.querySelector('.expand-btn');
+    if (card.classList.contains('expanded')) {
+        card.classList.remove('expanded');
+        detailsContainer.innerHTML = '';
+        expandBtn.innerHTML = '<i class="fas fa-info-circle"></i> جزئیات';
+        return;
+    }
+    document.querySelectorAll('.drug-library-card.expanded').forEach(c => {
+        c.classList.remove('expanded');
+        c.querySelector('.drug-library-details').innerHTML = '';
+        c.querySelector('.expand-btn').innerHTML = '<i class="fas fa-info-circle"></i> جزئیات';
+    });
+    card.classList.add('expanded');
+    expandBtn.innerHTML = '<i class="fas fa-times"></i> بستن';
+    const drug = drugDatabase[drugId];
+    detailsContainer.innerHTML = `
+        <div style="padding: 12px; border-top: 1px solid var(--border);">
+            <div style="display:grid;gap:8px;margin-bottom:12px;">
+                <div class="drug-library-row"><span class="drug-library-label">نام انگلیسی:</span><span class="drug-library-value">${drug.englishName}</span></div>
+                <div class="drug-library-row"><span class="drug-library-label">دسته:</span><span class="drug-library-value">${drug.category}</span></div>
+                <div class="drug-library-row"><span class="drug-library-label">آمپول:</span><span class="drug-library-value">${drug.ampouleOptions[0].label}</span></div>
+                <div class="drug-library-row"><span class="drug-library-label">دوز:</span><span class="drug-library-value">${drug.typicalDoseRange ? `${drug.typicalDoseRange.min}–${drug.typicalDoseRange.max} ${drug.typicalDoseRange.unit}` : '--'}</span></div>
+                <div class="drug-library-row"><span class="drug-library-label">محلول:</span><span class="drug-library-value">${drug.solutionType.join(', ')}</span></div>
+            </div>
+        </div>
+    `;
+}
+
+// ===== DARK MODE TOGGLE (ensure it works with local storage) =====
+const darkModeToggle = document.getElementById('darkModeToggle');
+if (darkModeToggle) {
+    darkModeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        darkModeToggle.querySelector('i').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+    });
+}
+// Load saved theme
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'dark') document.body.classList.add('dark-mode');
+else if (savedTheme === 'light') document.body.classList.remove('dark-mode');
+else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.body.classList.add('dark-mode');
+
+// ============================================
+// UTILITIES
+// ============================================
+function showToast(title, message, type = 'info') {
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+    const icons = { success: 'fas fa-check-circle', error: 'fas fa-times-circle', warning: 'fas fa-exclamation-triangle', info: 'fas fa-info-circle' };
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <i class="toast-icon ${icons[type]}"></i>
+        <div class="toast-content"><div class="toast-title">${title}</div><div class="toast-message">${message}</div></div>
+        <button class="toast-close">&times;</button>
+    `;
+    document.body.appendChild(toast);
+    toast.querySelector('.toast-close').addEventListener('click', () => toast.remove());
+    setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
+}
+
+function updateStats() {}
+function updateCalculationStats() { AppState.calculationsToday++; }
+
+function saveCalculation(totalDrug, concentration, pumpRate, duration) {
+    const history = JSON.parse(localStorage.getItem('calculationHistory') || '[]');
+    history.unshift({
+        id: Date.now(),
+        drug: AppState.selectedDrug,
+        drugName: drugDatabase[AppState.selectedDrug].persianName,
+        dose: AppState.desiredDose,
+        weight: AppState.patientWeight,
+        totalDrug, concentration, pumpRate, duration,
+        timestamp: new Date().toISOString()
+    });
+    if (history.length > 50) history.pop();
+    localStorage.setItem('calculationHistory', JSON.stringify(history));
+}
+
+function loadHistory() {
+    const historyList = document.getElementById('historyList');
+    if (!historyList) return;
+    const history = JSON.parse(localStorage.getItem('calculationHistory') || '[]');
+    if (history.length === 0) { historyList.innerHTML = '<div class="empty-history">تاریخچه‌ای یافت نشد</div>'; return; }
+    historyList.innerHTML = '';
+    history.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `
+            <div class="history-drug">${item.drugName}</div>
+            <div class="history-details">
+                <div>دوز: ${PersianNumbers.formatNumber(item.dose, 2)}</div>
+                <div>سرعت پمپ: <span class="latin-inline">${PersianNumbers.formatNumber(item.pumpRate, 2)} cc/hr</span></div>
+                <div class="history-time">${PersianNumbers.toLatin(new Date(item.timestamp).toLocaleDateString('fa-IR'))}</div>
+            </div>
+        `;
+        historyList.appendChild(div);
+    });
+}
+
+// ============================================
+// GLOBALS
+// ============================================
+window.selectDrug = selectDrug;
+window.switchTab = switchTab;
+window.calculateManualInfusion = calculateManualInfusion;
+window.convertElectrolyte = convertElectrolyte;
+window.convertPercentage = convertPercentage;
+window.convertUnits = convertUnits;
+window.calculateDripRate = calculateDripRate;
+window.calculateBMI = calculateBMI;
+window.calculateBSA = calculateBSA;
+window.calculateIBW = calculateIBW;
+window.calculateCrCl = calculateCrCl;
+window.checkCompatibility = checkCompatibility;
+window.calculateDose = calculateDose;
+window.TextDirection = TextDirection;
+window.PersianNumbers = PersianNumbers;

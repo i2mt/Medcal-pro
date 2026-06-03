@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>MedCalc Pro | دستیار محاسبات دارویی</title>
+    <meta name="description" content="محاسبه گر هوشمند تزریق دارو برای پرستاران و پزشکان">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Local Mitra font fallback */
+        @font-face {
+            font-family: 'Mitra';
+            src: url('fonts/Mitra.eot');
+            src: url('fonts/Mitra.eot?#iefix') format('embedded-opentype'),
+                 url('fonts/Mitra.woff2') format('woff2'),
+                 url('fonts/Mitra.woff') format('woff'),
+                 url('fonts/Mitra.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        /* Hide quick action elements completely */
+        .quick-actions-enhanced, .quick-actions, .action-btn-enhanced, .action-btn,
+        #saveCalculation, #shareCalculation, #resetCalculator, #manualResetBtn, #closeManualBtn2,
+        .quick-actions-enhanced *, .quick-actions * {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            height: 0 !important;
+            width: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            position: absolute !important;
+            left: -9999px !important;
+            pointer-events: none !important;
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo"><i class="fas fa-syringe"></i></div>
+                <div class="logo-text">
+                    <h1>MedCalc Pro</h1>
+                    <p>دستیار هوشمند محاسبات انفوزیون</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" id="themeToggle"><i class="fas fa-moon"></i></button>
+                <button class="icon-btn" id="historyBtn"><i class="fas fa-history"></i></button>
+                <button class="icon-btn" id="settingsBtn"><i class="fas fa-cog"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <div class="main-content">
+            <!-- Calculator Tab -->
+            <div class="tab-pane active" id="calculatorTab">
+                <div class="calculator-layout">
+                    <!-- Drug Sidebar (unchanged) -->
+                    <div class="drug-sidebar">
+                        <div class="drug-quick-select">
+                            <h3><i class="fas fa-search"></i> انتخاب سریع دارو</h3>
+                            <div class="drug-search-container">
+                                <input type="text" id="drugSearch" placeholder="جستجوی دارو..." autocomplete="off">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="drug-scroll-container">
+                                <div class="drug-grid-compact" id="drugGrid"></div>
+                            </div>
+                            <button class="manual-entry-btn gradient" id="openManual">
+                                <i class="fas fa-edit"></i>
+                                <span>محاسبه دستی داروی دیگر</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Calculator Main -->
+                    <div class="calculator-main">
+                        <div class="selected-drug-compact">
+                            <div class="selected-drug-icon-compact" id="selectedDrugIcon"><i class="fas fa-pills"></i></div>
+                            <div class="selected-drug-info-compact">
+                                <div class="selected-drug-name-compact" id="selectedDrugName">هپارین</div>
+                                <div class="selected-drug-desc-compact" id="selectedDrugDesc">
+                                    <span class="latin-inline">Heparin</span> - <span class="latin-inline">Anticoagulant</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Manual calculation section (populated by JS) -->
+                        <div class="manual-calculation-section" id="manualSection" style="display: none;"></div>
+
+                        <!-- Regular calculator controls -->
+                        <div class="calculator-controls-grid" id="calculatorControls">
+                            <div class="control-group">
+                                <label><i class="fas fa-infinity"></i> روش تزریق</label>
+                                <div class="method-selector-compact">
+                                    <button class="method-btn-compact active" data-method="syringe"><i class="fas fa-syringe"></i> <span>پمپ سرنگ</span></button>
+                                    <button class="method-btn-compact" data-method="infusion"><i class="fas fa-pump-medical"></i> <span>پمپ انفوزیون</span></button>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label><i class="fas fa-flask"></i> حجم محلول</label>
+                                <div class="volume-selector-enhanced">
+                                    <div class="volume-presets" id="volumeOptions"></div>
+                                    <div class="volume-custom-input" id="customVolumeContainer" style="display: none;">
+                                        <input type="number" id="customVolume" placeholder="حجم دلخواه" min="1" max="5000">
+                                        <span>سی‌سی</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label><i class="fas fa-syringe"></i> تعداد آمپول</label>
+                                <div class="ampoule-control-enhanced">
+                                    <button class="ampoule-btn-enhanced" id="decreaseAmpoule"><i class="fas fa-minus"></i></button>
+                                    <div class="ampoule-count-enhanced"><span id="ampouleCount">2</span><small>عدد</small></div>
+                                    <button class="ampoule-btn-enhanced" id="increaseAmpoule"><i class="fas fa-plus"></i></button>
+                                </div>
+                                <div class="ampoule-info-enhanced" id="ampouleInfo"><span>هر آمپول: </span><span class="latin-inline">5000 units in 1 ml</span></div>
+                                <div class="ampoule-type-buttons" id="ampouleTypeButtons" style="display: none; margin-top: 10px;"></div>
+                            </div>
+                            <div class="control-group">
+                                <label><i class="fas fa-file-medical-alt"></i> دوز درخواستی</label>
+                                <div class="dose-input-enhanced">
+                                    <div class="dose-input-wrapper">
+                                        <input type="number" id="doctorOrder" placeholder="0" min="0" step="0.1">
+                                        <span class="dose-unit-enhanced" id="orderUnit">units/hour</span>
+                                    </div>
+                                </div>
+                                <div class="weight-toggle-enhanced" id="weightContainer" style="display: none;">
+                                    <div class="toggle-section">
+                                        <label class="toggle-switch-enhanced">
+                                            <input type="checkbox" id="weightCheckbox">
+                                            <span class="toggle-slider-enhanced"></span>
+                                        </label>
+                                        <label class="toggle-label" for="weightCheckbox"><i class="fas fa-weight-scale"></i><span>محاسبه بر اساس وزن</span></label>
+                                    </div>
+                                    <div class="weight-input-section">
+                                        <input type="number" id="patientWeight" placeholder="0" min="0" step="0.1" inputmode="decimal" disabled>
+                                        <span class="weight-unit latin-inline">kg</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="calculate-btn-enhanced" id="calculateBtn"><i class="fas fa-calculator"></i> <span>محاسبه سرعت پمپ</span></button>
+
+                        <div class="results-section-enhanced" id="resultsSection" style="display: none;">
+                            <h3><i class="fas fa-chart-line"></i> نتایج محاسبه</h3>
+                            <div class="results-grid-enhanced">
+                                <div class="result-item-enhanced"><div class="result-label-enhanced">مقدار کل دارو</div><div class="result-value-enhanced" id="totalDrugAmount">0</div><div class="result-unit-enhanced" id="totalDrugUnit">واحد</div></div>
+                                <div class="result-item-enhanced"><div class="result-label-enhanced">غلظت محلول</div><div class="result-value-enhanced" id="concentrationResult">0</div><div class="result-unit-enhanced" id="concentrationUnit">واحد/سی‌سی</div></div>
+                                <div class="result-item-enhanced highlight"><div class="result-label-enhanced">سرعت پمپ</div><div class="result-value-enhanced" id="pumpRateResult">0</div><div class="result-unit-enhanced" id="pumpRateUnit">سی‌سی/ساعت</div></div>
+                                <div class="result-item-enhanced"><div class="result-label-enhanced">زمان تخمینی</div><div class="result-value-enhanced" id="durationResult">0</div><div class="result-unit-enhanced" id="durationUnit">ساعت</div></div>
+                            </div>
+                        </div>
+
+                        <div class="guide-section" id="guideSection" style="display: none;"><div class="guide-header"><i class="fas fa-list-ol"></i><span>راهنمای آماده‌سازی و تزریق</span></div><div class="guide-steps" id="stepByStepGuide"></div></div>
+                        <div class="warnings-section" id="warningsSection" style="display: none;"><div class="warnings-header"><i class="fas fa-exclamation-triangle"></i><span>هشدارها و نکات مهم</span></div><div class="warnings-list" id="warningsList"></div></div>
+                        <div class="compatibility-section" id="compatibilitySection" style="display: none;"><div class="compatibility-header"><i class="fas fa-exchange-alt"></i><span>سازگاری Y-Site</span></div><div class="compatibility-grid"><div class="compatible-drugs"><div class="compatibility-title"><i class="fas fa-check-circle"></i><span>سازگار</span></div><div class="compatibility-list" id="compatibleDrugsList"></div></div><div class="incompatible-drugs"><div class="compatibility-title"><i class="fas fa-times-circle"></i><span>ناسازگار</span></div><div class="compatibility-list" id="incompatibleDrugsList"></div></div></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Converters, Drugs, Tools tabs (unchanged from original) -->
+            <div class="tab-pane" id="convertersTab"><div class="converters-container"><h2><i class="fas fa-exchange-alt"></i> مبدل‌های دارویی</h2><div class="converter-grid">...</div></div></div>
+            <div class="tab-pane" id="drugsTab"><div class="drugs-container"><h2><i class="fas fa-pills"></i> بانک اطلاعات دارویی</h2><div class="drugs-search"><input type="text" id="librarySearch" placeholder="جستجوی دارو در بانک اطلاعات..."><i class="fas fa-search"></i></div><div class="drugs-library" id="drugLibrary"></div></div></div>
+            <div class="tab-pane" id="toolsTab"><div class="tools-container"><h2><i class="fas fa-tools"></i> ابزارهای جانبی</h2><div class="tools-grid">...</div></div></div>
+        </div>
+
+        <div class="tab-bar">
+            <button class="tab-item active" data-tab="calculator"><i class="fas fa-calculator"></i><span>محاسبه</span></button>
+            <button class="tab-item" data-tab="converters"><i class="fas fa-exchange-alt"></i><span>مبدل‌ها</span></button>
+            <button class="tab-item" data-tab="drugs"><i class="fas fa-pills"></i><span>داروها</span></button>
+            <button class="tab-item" data-tab="tools"><i class="fas fa-tools"></i><span>ابزارها</span></button>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="settingsModal">...</div>
+    <div class="modal" id="historyModal">...</div>
+
+    <script src="drugDatabase.js"></script>
+    <script src="converters.js"></script>
+    <script src="script.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js').then(reg => reg.update());
+        }
+    </script>
+</body>
+</html>
