@@ -3,7 +3,7 @@
 // Always tries to fetch the latest version.
 // Falls back to cache only when offline.
 
-const CACHE_NAME = 'FoxiMed_v3.3.8';
+const CACHE_NAME = 'FoxiMed_v3.4.0';
 
 const urlsToCache = [
     './',
@@ -53,20 +53,13 @@ self.addEventListener('fetch', event => {
     event.respondWith(
         fetch(event.request)
             .then(networkResponse => {
-
-                // Cache successful responses
-                if (
-                    networkResponse &&
-                    networkResponse.status === 200
-                ) {
+                if (networkResponse && networkResponse.status === 200) {
                     const responseClone = networkResponse.clone();
-
                     caches.open(CACHE_NAME)
                         .then(cache => {
                             cache.put(event.request, responseClone);
                         });
                 }
-
                 return networkResponse;
             })
             .catch(() => {
