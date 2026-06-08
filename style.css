@@ -45,14 +45,7 @@
 }
 
 .dark-mode {
-    --primary: #60a5fa;
-    --primary-dark: #3b82f6;
-    --primary-light: rgba(96, 165, 250, 0.15);
-    --secondary: #c084fc;
-    --danger: #f87171;
-    --warning: #fbbf24;
-    --success: #34d399;
-    --info: #38bdf8;
+    /* Only background and border colors, NOT primary/gradient — those come from theme system */
     --bg-primary: #111827;
     --bg-secondary: #1f2937;
     --surface: #1f2937;
@@ -66,6 +59,7 @@
     --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
     --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.65);
     --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    /* Gradient will be set by theme system, but define fallback */
     --gradient-primary: linear-gradient(135deg, #60a5fa 0%, #34d399 100%);
     --gradient-secondary: linear-gradient(135deg, #c084fc 0%, #f472b6 100%);
 }
@@ -877,7 +871,6 @@ select {
 .icon-btn:hover {
     background: var(--primary-light);
     color: var(--primary);
-    border-color: var(--primary);
     border-color: var(--primary);
     transform: translateY(-2px);
 }
@@ -7281,10 +7274,3 @@ html {
     .update-banner { left: 8px; right: 8px; padding: 10px 12px; }
     .update-banner-btn { padding: 0 10px; font-size: 12px; }
 }
-
-#weightContainer .calc-toggle-row{cursor:pointer;}
-#weightContainer .weight-input-row{margin:0 12px 12px;border-radius:10px;border:1px solid var(--border);}
-.drug-library-card .available-doses,.available-doses,.dose-availability{direction:ltr;unicode-bidi:embed;}
-.drug-library-card .accordion-header,.drug-library-header{min-height:unset;padding-top:10px;padding-bottom:10px;}
-.dark-mode .theme-swatch.active{border-color:var(--primary)!important;}
-.volume-preset-btn.active,.volume-preset-btn.active span,.volume-preset-btn.active .number,.volume-preset-btn.active .unit-text{color:#fff!important;}
