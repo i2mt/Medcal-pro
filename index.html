@@ -110,6 +110,12 @@
         </div>
     </header>
 
+    <!-- Greeting Banner -->
+    <div class="greeting-banner" id="greetingBanner" style="display:none;">
+        <span class="greeting-text" id="greetingText"></span>
+        <button class="greeting-close" id="greetingClose" aria-label="بستن"><i class="fas fa-times"></i></button>
+    </div>
+
     <!-- Main App Container -->
     <div class="app-container">
         <div class="main-content">
@@ -1003,7 +1009,21 @@
                 <button class="modal-close" id="closeSettings">&times;</button>
             </div>
             <div class="modal-body">
+                <!-- User Profile -->
                 <div class="settings-group">
+                    <h4><i class="fas fa-user-circle"></i> پروفایل کاربر</h4>
+                    <div class="setting-item user-name-setting">
+                        <span>نام شما</span>
+                        <div class="user-name-input-wrap" id="userNameWrap">
+                            <span class="user-name-display" id="userNameDisplay">—</span>
+                            <button class="user-name-edit-btn" id="userNameEditBtn" title="ویرایش نام"><i class="fas fa-pen"></i></button>
+                        </div>
+                    </div>
+                    <div class="user-name-edit-row" id="userNameEditRow" style="display:none;">
+                        <input type="text" id="userNameInput" class="user-name-input" placeholder="نام خود را وارد کنید..." maxlength="30" autocomplete="off">
+                        <button class="user-name-save-btn" id="userNameSaveBtn"><i class="fas fa-check"></i> ذخیره</button>
+                    </div>
+                </div>
                     <h4><i class="fas fa-palette"></i> ظاهر</h4>
                     <div class="setting-item">
                         <span>حالت تاریک</span>
