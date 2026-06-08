@@ -2590,33 +2590,51 @@ function setupOfflineIndicator() {
 // ============================================
 // SWIPE GESTURE FOR TAB SWITCHING (Mobile)
 // ============================================
+
 function initSwipe() {
     if (window.innerWidth > 768) return; // desktop only
     const container = document.querySelector('.main-content');
     if (!container) return;
+    
     let touchStartX = 0;
+    let touchStartY = 0;
     let touchEndX = 0;
-    const minSwipeDistance = 50;
+    let touchEndY = 0;
+    const minHorizontalDistance = 80;   // increased from 50
+    const maxVerticalDistance = 50;      // if vertical movement > this, ignore swipe
     
     container.addEventListener('touchstart', (e) => {
         touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+    
+    container.addEventListener('touchmove', (e) => {
+        // Optional: track current movement to abort early if vertical is dominant
+        // But we'll just use end position.
     }, { passive: true });
     
     container.addEventListener('touchend', (e) => {
         touchEndX = e.changedTouches[0].screenX;
-        const diff = touchEndX - touchStartX;
-        if (Math.abs(diff) < minSwipeDistance) return;
+        touchEndY = e.changedTouches[0].screenY;
         
+        const diffX = Math.abs(touchEndX - touchStartX);
+        const diffY = Math.abs(touchEndY - touchStartY);
+        
+        // Only trigger if horizontal movement is big enough AND
+        // horizontal movement is greater than vertical movement (no vertical scroll intention)
+        if (diffX < minHorizontalDistance || diffY > diffX) return;
+        
+        const direction = (touchEndX - touchStartX) > 0 ? 'right' : 'left';
         const tabs = ['calculator', 'drugs', 'tools'];
         const current = AppState.currentTab;
         let newIndex = tabs.indexOf(current);
-        if (diff > 0) {
-            // swipe right → previous tab
+        
+        if (direction === 'right') {
             newIndex = (newIndex - 1 + tabs.length) % tabs.length;
         } else {
-            // swipe left → next tab
             newIndex = (newIndex + 1) % tabs.length;
         }
+        
         if (newIndex !== tabs.indexOf(current)) {
             switchTab(tabs[newIndex]);
             haptic(20);
