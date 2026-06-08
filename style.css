@@ -7602,3 +7602,72 @@ html {
     color: white;
     cursor: pointer;
 }
+/* ============================================
+   LARGE FONT - GLOBAL OVERRIDES
+   ============================================ */
+.large-font,
+.large-font body,
+.large-font .drug-name-compact,
+.large-font .selected-drug-name-compact,
+.large-font .selected-drug-desc-compact,
+.large-font .control-group label,
+.large-font .method-btn-compact span,
+.large-font .volume-preset-btn .number,
+.large-font .volume-preset-btn .unit-text,
+.large-font .ampoule-count-enhanced,
+.large-font .ampoule-info-enhanced,
+.large-font .dose-unit-enhanced,
+.large-font .result-label-enhanced,
+.large-font .result-unit-enhanced,
+.large-font .guide-step .step-content,
+.large-font .warning-text,
+.large-font .compatibility-list,
+.large-font .history-drug,
+.large-font .history-details,
+.large-font .about-row span,
+.large-font .setting-item span,
+.large-font .toast-title,
+.large-font .toast-message,
+.large-font .tab-item span,
+.large-font .qref-name,
+.large-font .qref-english,
+.large-font .qref-info-label,
+.large-font .qref-info-val,
+.large-font .qref-ampoule-item,
+.large-font .accordion-title,
+.large-font .accordion-sub,
+.large-font .gcs-domain-title,
+.large-font .gcs-btn-label,
+.large-font .gcs-note-item span,
+.large-font .burns-view-label,
+.large-font .burns-chip,
+.large-font .burns-result-label,
+.large-font .burns-note-item span,
+.large-font .drip-rate-label,
+.large-font .conv-result-label,
+.large-font .conv-result-value {
+    font-size: 1.1em !important;
+}
+
+.large-font .result-value-enhanced {
+    font-size: 32px !important;
+}
+.large-font .result-item-enhanced.highlight .result-value-enhanced {
+    font-size: 36px !important;
+}
+.large-font .gcs-total-score {
+    font-size: 40px !important;
+}
+.large-font .calculate-btn-enhanced,
+.large-font .converter-btn,
+.large-font .tool-btn,
+.large-font .setting-btn {
+    font-size: 1em !important;
+    padding: 12px !important;
+}
+.large-font .method-btn-compact,
+.large-font .volume-preset-btn,
+.large-font .ampoule-type-btn {
+    min-height: 48px;
+    font-size: 0.9em !important;
+}
