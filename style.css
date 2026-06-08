@@ -7589,19 +7589,6 @@ html {
     background: var(--surface-elevated);
     border-color: #4a5568;
 }
-
-.username-save-btn:not(.active) {
-    background: var(--surface-elevated);
-    color: var(--text-tertiary);
-    box-shadow: none;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-.username-save-btn.active {
-    background: var(--gradient-primary);
-    color: white;
-    cursor: pointer;
-}
 /* ============================================
    LARGE FONT - GLOBAL OVERRIDES
    ============================================ */
@@ -7671,18 +7658,82 @@ html {
     min-height: 48px;
     font-size: 0.9em !important;
 }
-/* Greeting banner visibility */
+
+/* ============================================
+   GREETING BANNER (shown/hidden by JS)
+   ============================================ */
 .greeting-banner {
     display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 16px;
+    background: var(--gradient-primary);
+    color: white;
+    font-family: var(--font-persian);
+    font-size: 13px;
+    font-weight: 500;
+    direction: rtl;
+    position: relative;
+    z-index: 999;
+    animation: bannerSlideDown 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
+
 .greeting-banner.banner-visible {
     display: flex;
 }
 
-/* Save button active state */
+.greeting-banner.banner-hiding {
+    animation: bannerSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes bannerSlideDown {
+    from { opacity: 0; transform: translateY(-100%); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bannerSlideUp {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(-100%); }
+}
+
+.greeting-text {
+    flex: 1;
+}
+
+.greeting-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.75);
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: 12px;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+    flex-shrink: 0;
+}
+
+.greeting-close:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* ============================================
+   USERNAME SAVE BUTTON ACTIVE STATE
+   ============================================ */
 .username-save-btn {
     transition: all 0.2s ease;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: none;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
+
 .username-save-btn:not(.active) {
     background: var(--surface-elevated);
     color: var(--text-tertiary);
@@ -7690,8 +7741,40 @@ html {
     cursor: not-allowed;
     opacity: 0.6;
 }
+
 .username-save-btn.active {
     background: var(--gradient-primary);
     color: white;
     cursor: pointer;
+}
+
+.username-save-btn.active:hover {
+    opacity: 0.9;
+}
+
+/* ============================================
+   THEME MODE SELECT DROPDOWN (fallback)
+   ============================================ */
+.theme-mode-select {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: var(--font-persian);
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+    direction: rtl;
+}
+
+.theme-mode-select:focus {
+    border-color: var(--primary);
+}
+
+.dark-mode .theme-mode-select {
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+    border-color: #4a5568;
 }
