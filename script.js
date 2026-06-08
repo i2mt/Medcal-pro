@@ -3167,17 +3167,19 @@ function showGreetingBanner() {
     const greeting = getGreeting();
     textEl.textContent = name ? `${greeting}، ${name} عزیز 👋` : `${greeting} 👋`;
 
-    banner.style.display = 'flex';
-    banner.classList.remove('banner-hiding');
     banner.classList.add('banner-visible');
+    banner.classList.remove('banner-hiding');
 
-    // Auto-dismiss after 4.5 s
-    let autoDismiss = setTimeout(dismissBanner, 4500);
+    // Auto-dismiss after 4.5 seconds
+    let autoDismiss = setTimeout(() => dismissBanner(), 4500);
 
     function dismissBanner() {
         clearTimeout(autoDismiss);
         banner.classList.add('banner-hiding');
-        banner.addEventListener('animationend', () => { banner.style.display = 'none'; }, { once: true });
+        banner.addEventListener('animationend', () => {
+            banner.classList.remove('banner-visible');
+            banner.classList.remove('banner-hiding');
+        }, { once: true });
     }
 
     closeBtn.addEventListener('click', dismissBanner);
