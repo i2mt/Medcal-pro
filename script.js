@@ -2060,7 +2060,7 @@ if (drug.typicalDoseRange) {
         const incompatible = (drug.ySiteCompatibilities?.incompatible || []).slice(0, 5);
 
         const ampoulesHTML = drug.ampouleOptions.map(a =>
-            '<div class="qref-ampoule-item"><i class="fas fa-vial"></i><span>' + a.label + '</span></div>'
+            '<div class="qref-ampoule-item"><i class="fas fa-vial"></i><span dir="ltr">' + a.label + '</span></div>'
         ).join('');
 
         const item = document.createElement('div');
