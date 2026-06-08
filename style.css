@@ -7778,3 +7778,51 @@ html {
     color: var(--text-primary);
     border-color: #4a5568;
 }
+
+/* Custom numeric keypad */
+.custom-keypad {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-top: 2px solid var(--primary);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 12px;
+    z-index: 10000;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+    animation: slideUp 0.25s ease;
+    direction: ltr;
+}
+.custom-keypad button {
+    padding: 14px;
+    font-size: 22px;
+    font-weight: 600;
+    background: var(--surface-elevated);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.1s ease;
+    font-family: var(--font-mono);
+}
+.custom-keypad button:active {
+    transform: scale(0.96);
+    background: var(--primary-light);
+}
+.custom-keypad .keypad-done {
+    background: var(--gradient-primary);
+    color: white;
+    border-color: transparent;
+    grid-column: span 2;
+}
+.custom-keypad .keypad-backspace {
+    background: var(--danger);
+    color: white;
+}
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+}
