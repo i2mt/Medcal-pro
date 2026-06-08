@@ -3008,6 +3008,27 @@ select {
 
 /* Desktop layout */
 @media (min-width: 769px) {
+    /* Main content area: between header and fixed tab bar */
+    .main-content {
+        position: fixed;
+        top: 60px;
+        left: 0;
+        right: 0;
+        bottom: 56px; /* height of tab bar */
+        overflow: hidden;
+        margin-top: 0;
+    }
+
+    .tab-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 56px;
+        z-index: 1000;
+    }
+
+    /* Calculator layout fills the main content */
     .calculator-layout {
         height: 100%;
         display: flex;
@@ -3015,15 +3036,36 @@ select {
         overflow: hidden;
     }
 
+    /* Drug sidebar – independent scroll */
+    .drug-sidebar {
+        height: 100%;
+        overflow-y: auto;
+        flex-shrink: 0;
+    }
+
+    /* Calculator main – scrollable column, button sticky at bottom */
     .calculator-main {
-        margin-right: 0;
         flex: 1;
         height: 100%;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
+        padding: var(--spacing-lg);
+        gap: var(--spacing-lg);
     }
 
+    /* Sticky calculate button – stays at bottom of scrollable area */
+    .calculate-btn-sticky-wrap {
+        position: sticky;
+        bottom: 0;
+        background: var(--bg-primary);
+        padding: 10px 0;
+        margin-top: auto;
+        z-index: 10;
+        border-top: 1px solid var(--border);
+    }
+
+    /* Remaining desktop styles (converter grid, etc.) keep as is */
     .calculator-controls-grid {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -3121,27 +3163,6 @@ select {
 
     #openManual {
         display: flex !important;
-    }
-
-    .main-content {
-        margin-top: 60px;
-        height: calc(100vh - 60px);
-        position: relative;
-        overflow: hidden;   /* prevents body scroll */
-    }
-   .drug-sidebar {
-        height: 100%;
-        overflow-y: auto;
-        flex-shrink: 0;
-    }
-   .calculate-btn-sticky-wrap {
-        position: sticky;
-        bottom: 0;
-        margin-top: auto;
-    }
-
-    .tab-bar {
-        position: fixed;
     }
 }
 
