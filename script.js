@@ -22,7 +22,8 @@ const AppState = {
         compatAlerts: true,
         saveHistory: true,
         hapticFeedback: true,
-        colorTheme: 'fox'
+        colorTheme: 'fox',
+        themeMode: 'light'
     },
     reverseMode: false
 };
@@ -473,7 +474,8 @@ const DOM = {
     doseRangeText: document.getElementById('doseRangeText'),
     dripRateRow: document.getElementById('dripRateRow'),
     dripRateResult: document.getElementById('dripRateResult'),
-    dripRateLabel: document.getElementById('dripRateLabel')
+    dripRateLabel: document.getElementById('dripRateLabel'),
+    themeModeSelect: document.getElementById('themeModeSelect')
 };
 
 // ============================================
@@ -689,6 +691,7 @@ function initializeApp() {
     setupBurns();
     setupThemePicker();
     setupUpdateDetection();
+    setupThemeModeListener();
     setupUserName();
     showGreetingBanner();
 }
@@ -722,6 +725,7 @@ function loadSettings() {
     if (DOM.compatAlertToggle) DOM.compatAlertToggle.checked = AppState.settings.compatAlerts;
     if (DOM.saveHistoryToggle) DOM.saveHistoryToggle.checked = AppState.settings.saveHistory;
     if (DOM.hapticToggle) DOM.hapticToggle.checked = AppState.settings.hapticFeedback !== false;
+    if (DOM.themeModeSelect) DOM.themeModeSelect.value = AppState.settings.themeMode || 'light';
     applySettings();
 }
 
@@ -1334,6 +1338,8 @@ function setupEventListeners() {
 function setupSettingsEventListeners() {
     if (DOM.darkModeToggle) DOM.darkModeToggle.addEventListener('change', function() {
         AppState.settings.darkMode = this.checked;
+        AppState.settings.themeMode = this.checked ? 'dark' : 'light';
+        if (DOM.themeModeSelect) DOM.themeModeSelect.value = AppState.settings.themeMode;
         saveSettings();
         applySettings();
     });
@@ -1366,6 +1372,12 @@ function setupSettingsEventListeners() {
         if (this.checked) haptic(40);
     });
     if (DOM.exportDataBtn) DOM.exportDataBtn.addEventListener('click', exportHistory);
+    if (DOM.themeModeSelect) DOM.themeModeSelect.addEventListener('change', function() {
+        AppState.settings.themeMode = this.value;
+        saveSettings();
+        applyThemeMode();
+        if (DOM.darkModeToggle) DOM.darkModeToggle.checked = AppState.settings.darkMode;
+    });
     if (DOM.checkUpdateBtn) DOM.checkUpdateBtn.addEventListener('click', async function() {
         this.disabled = true;
         const origHTML = this.innerHTML;
@@ -1633,10 +1645,34 @@ function switchTab(tabName) {
 // ============================================
 // THEME
 // ============================================
+// ============================================
+// THEME MODE (Light / Dark / Auto)
+// ============================================
+const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+function applyThemeMode() {
+    const mode = AppState.settings.themeMode || 'light';
+    const shouldBeDark = mode === 'dark' ? true : mode === 'auto' ? systemPrefersDark.matches : false;
+    AppState.settings.darkMode = shouldBeDark;
+    AppState.theme = shouldBeDark ? 'dark' : 'light';
+    applySettings();
+    if (DOM.darkModeToggle) DOM.darkModeToggle.checked = shouldBeDark;
+    localStorage.setItem('theme', AppState.theme);
+    saveSettings();
+}
+
+function setupThemeModeListener() {
+    systemPrefersDark.addEventListener('change', () => {
+        if (AppState.settings.themeMode === 'auto') applyThemeMode();
+    });
+}
+
 function toggleTheme() {
     AppState.theme = AppState.theme === 'light' ? 'dark' : 'light';
     document.body.classList.toggle('dark-mode', AppState.theme === 'dark');
     AppState.settings.darkMode = AppState.theme === 'dark';
+    AppState.settings.themeMode = AppState.theme === 'dark' ? 'dark' : 'light';
+    if (DOM.themeModeSelect) DOM.themeModeSelect.value = AppState.settings.themeMode;
     saveSettings();
     const meta = document.getElementById('themeColorMeta');
     if (meta) meta.content = AppState.theme === 'dark' ? '#1f2937' : '#ffffff';
