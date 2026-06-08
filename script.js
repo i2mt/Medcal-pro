@@ -3036,11 +3036,9 @@ function updateParkland() {
     const totalFluid = 4 * weight * total;
     const first8h = totalFluid / 2;
     const next16h = totalFluid / 2;
-    parklandEl.textContent = `${totalFluid.toFixed(0)} mL`;
-    parklandRow.style.display = 'flex';
-    parklandRow.querySelector('.burns-result-label').textContent =
-        `Parkland: ${totalFluid.toFixed(0)} mL (اول ۸ ساعت: ${first8h.toFixed(0)} mL | ۱۶ ساعت باقی: ${next16h.toFixed(0)} mL)`;
-}
+    parklandEl.innerHTML = `<span dir="ltr" style="display:inline-block; unicode-bidi:isolate;">${totalFluid.toFixed(0)} mL</span>`;
+parklandRow.querySelector('.burns-result-label').innerHTML = 
+    `Parkland: <span dir="ltr" style="display:inline-block; unicode-bidi:isolate;">${totalFluid.toFixed(0)} mL</span> (اول ۸ ساعت: <span dir="ltr">${first8h.toFixed(0)} mL</span> | ۱۶ ساعت باقی: <span dir="ltr">${next16h.toFixed(0)} mL</span>)`;
 
 function resetBurns() {
     BURNS_STATE.selected.clear();
