@@ -711,7 +711,6 @@ function initializeApp() {
     updateVolumeOptions();
     setupMobileLayout();
     initSwipe();
-    initCustomNumericKeypad();
     setupMobileOptimizations();
     setupSimpleInputHandling();
     TextDirection.applyBidiFixes();
@@ -2625,131 +2624,6 @@ function initSwipe() {
     }, { passive: true });
 }
 // ============================================
-// ============================================
-// CUSTOM NUMERIC KEYPAD (Mobile only)
-// ============================================
-let activeNumericInput = null;
-let keypad = null;
-
-function createNumericKeypad() {
-    const pad = document.createElement('div');
-    pad.className = 'custom-keypad';
-    pad.innerHTML = `
-        <button data-value="7">7</button>
-        <button data-value="8">8</button>
-        <button data-value="9">9</button>
-        <button class="keypad-backspace" data-action="backspace"><i class="fas fa-delete-left"></i></button>
-        <button data-value="4">4</button>
-        <button data-value="5">5</button>
-        <button data-value="6">6</button>
-        <button data-value=".">.</button>
-        <button data-value="1">1</button>
-        <button data-value="2">2</button>
-        <button data-value="3">3</button>
-        <button data-value="0">0</button>
-        <button class="keypad-done" data-action="done">✔ تأیید</button>
-    `;
-    document.body.appendChild(pad);
-    
-    pad.addEventListener('click', (e) => {
-        const btn = e.target.closest('button');
-        if (!btn) return;
-        if (!activeNumericInput) return;
-        
-        const value = btn.dataset.value;
-        const action = btn.dataset.action;
-        
-        if (action === 'backspace') {
-            let current = activeNumericInput.value;
-            activeNumericInput.value = current.slice(0, -1);
-        } else if (action === 'done') {
-            hideNumericKeypad();
-            activeNumericInput.blur();
-            return;
-        } else if (value !== undefined) {
-            let current = activeNumericInput.value;
-            // Prevent multiple decimal points
-            if (value === '.' && current.includes('.')) return;
-            activeNumericInput.value = current + value;
-        }
-        
-        // Convert Persian digits to Latin and trigger input event
-        const latinValue = PersianNumbers.toLatin(activeNumericInput.value);
-        if (latinValue !== activeNumericInput.value) {
-            activeNumericInput.value = latinValue;
-        }
-        // Fire input event so all listeners (clearResults, calculation, etc.) run
-        activeNumericInput.dispatchEvent(new Event('input', { bubbles: true }));
-        haptic(20);
-    });
-    return pad;
-}
-
-function showNumericKeypad(inputElement) {
-    if (!keypad) keypad = createNumericKeypad();
-    if (activeNumericInput === inputElement) return;
-    
-    // Hide any currently open keypad
-    hideNumericKeypad();
-    
-    activeNumericInput = inputElement;
-    // Prevent system keyboard
-    activeNumericInput.setAttribute('readonly', 'readonly');
-    activeNumericInput.style.caretColor = 'transparent';
-    
-    // Show keypad
-    keypad.style.display = 'grid';
-    // Small delay to ensure layout
-    setTimeout(() => keypad.classList.add('visible'), 10);
-}
-
-function hideNumericKeypad() {
-    if (keypad) {
-        keypad.style.display = 'none';
-        keypad.classList.remove('visible');
-    }
-    if (activeNumericInput) {
-        activeNumericInput.removeAttribute('readonly');
-        activeNumericInput.style.caretColor = '';
-        activeNumericInput = null;
-    }
-}
-
-function initCustomNumericKeypad() {
-    // Only on mobile devices
-    if (window.innerWidth > 768) return;
-    
-    // List of all numeric input IDs (calculator and manual)
-    const numericInputs = [
-        'doctorOrder', 'patientWeight', 'customVolume',
-        'manualStrength', 'manualVialVolume', 'manualSolutionVolume',
-        'manualDesiredDose', 'manualPatientWeight'
-    ];
-    
-    numericInputs.forEach(id => {
-        const input = document.getElementById(id);
-        if (!input) return;
-        
-        // Remove any existing listeners to avoid duplicates
-        input.removeEventListener('focus', showNumericKeypadHandler);
-        input.removeEventListener('blur', hideNumericKeypadHandler);
-        
-        // Store handlers so we can remove them later if needed
-        input.addEventListener('focus', () => showNumericKeypad(input));
-        input.addEventListener('blur', () => {
-            // Delay to allow keypad button click to register
-            setTimeout(() => {
-                if (document.activeElement !== input) {
-                    hideNumericKeypad();
-                }
-            }, 200);
-        });
-    });
-}
-
-// Helper to prevent duplicate listeners
-function showNumericKeypadHandler(e) { showNumericKeypad(e.target); }
-function hideNumericKeypadHandler(e) { hideNumericKeypad(); }
 // ============================================
 // REVERSE TOOLTIP
 // ============================================
