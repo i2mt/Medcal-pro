@@ -2625,6 +2625,7 @@ function initSwipe() {
     }, { passive: true });
 }
 // ============================================
+// ============================================
 // CUSTOM NUMERIC KEYPAD (Mobile only)
 // ============================================
 let activeNumericInput = null;
@@ -2664,11 +2665,20 @@ function createNumericKeypad() {
         } else if (action === 'done') {
             hideNumericKeypad();
             activeNumericInput.blur();
+            return;
         } else if (value !== undefined) {
             let current = activeNumericInput.value;
+            // Prevent multiple decimal points
             if (value === '.' && current.includes('.')) return;
             activeNumericInput.value = current + value;
         }
+        
+        // Convert Persian digits to Latin and trigger input event
+        const latinValue = PersianNumbers.toLatin(activeNumericInput.value);
+        if (latinValue !== activeNumericInput.value) {
+            activeNumericInput.value = latinValue;
+        }
+        // Fire input event so all listeners (clearResults, calculation, etc.) run
         activeNumericInput.dispatchEvent(new Event('input', { bubbles: true }));
         haptic(20);
     });
@@ -2678,46 +2688,68 @@ function createNumericKeypad() {
 function showNumericKeypad(inputElement) {
     if (!keypad) keypad = createNumericKeypad();
     if (activeNumericInput === inputElement) return;
+    
+    // Hide any currently open keypad
     hideNumericKeypad();
+    
     activeNumericInput = inputElement;
+    // Prevent system keyboard
     activeNumericInput.setAttribute('readonly', 'readonly');
+    activeNumericInput.style.caretColor = 'transparent';
+    
+    // Show keypad
     keypad.style.display = 'grid';
+    // Small delay to ensure layout
+    setTimeout(() => keypad.classList.add('visible'), 10);
 }
 
 function hideNumericKeypad() {
-    if (keypad) keypad.style.display = 'none';
+    if (keypad) {
+        keypad.style.display = 'none';
+        keypad.classList.remove('visible');
+    }
     if (activeNumericInput) {
         activeNumericInput.removeAttribute('readonly');
+        activeNumericInput.style.caretColor = '';
         activeNumericInput = null;
     }
 }
 
 function initCustomNumericKeypad() {
-    if (window.innerWidth > 768) return; // desktop only
-    const numericInputs = ['doctorOrder', 'patientWeight', 'customVolume'];
+    // Only on mobile devices
+    if (window.innerWidth > 768) return;
+    
+    // List of all numeric input IDs (calculator and manual)
+    const numericInputs = [
+        'doctorOrder', 'patientWeight', 'customVolume',
+        'manualStrength', 'manualVialVolume', 'manualSolutionVolume',
+        'manualDesiredDose', 'manualPatientWeight'
+    ];
+    
     numericInputs.forEach(id => {
         const input = document.getElementById(id);
         if (!input) return;
+        
+        // Remove any existing listeners to avoid duplicates
+        input.removeEventListener('focus', showNumericKeypadHandler);
+        input.removeEventListener('blur', hideNumericKeypadHandler);
+        
+        // Store handlers so we can remove them later if needed
         input.addEventListener('focus', () => showNumericKeypad(input));
         input.addEventListener('blur', () => {
+            // Delay to allow keypad button click to register
             setTimeout(() => {
-                if (document.activeElement !== input) hideNumericKeypad();
-            }, 150);
-        });
-    });
-    // Also handle manual calculation inputs
-    const manualInputs = ['manualStrength', 'manualVialVolume', 'manualSolutionVolume', 'manualDesiredDose', 'manualPatientWeight'];
-    manualInputs.forEach(id => {
-        const input = document.getElementById(id);
-        if (!input) return;
-        input.addEventListener('focus', () => showNumericKeypad(input));
-        input.addEventListener('blur', () => {
-            setTimeout(() => {
-                if (document.activeElement !== input) hideNumericKeypad();
-            }, 150);
+                if (document.activeElement !== input) {
+                    hideNumericKeypad();
+                }
+            }, 200);
         });
     });
 }
+
+// Helper to prevent duplicate listeners
+function showNumericKeypadHandler(e) { showNumericKeypad(e.target); }
+function hideNumericKeypadHandler(e) { hideNumericKeypad(); }
 // ============================================
 // REVERSE TOOLTIP
 // ============================================
