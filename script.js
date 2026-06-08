@@ -710,6 +710,8 @@ function initializeApp() {
     updateStats();
     updateVolumeOptions();
     setupMobileLayout();
+    initSwipe();
+    initCustomNumericKeypad();
     setupMobileOptimizations();
     setupSimpleInputHandling();
     TextDirection.applyBidiFixes();
@@ -2586,7 +2588,136 @@ function setupOfflineIndicator() {
     window.addEventListener('online', update);
     if (!navigator.onLine) update();
 }
+// ============================================
+// SWIPE GESTURE FOR TAB SWITCHING (Mobile)
+// ============================================
+function initSwipe() {
+    if (window.innerWidth > 768) return; // desktop only
+    const container = document.querySelector('.main-content');
+    if (!container) return;
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const minSwipeDistance = 50;
+    
+    container.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    
+    container.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        const diff = touchEndX - touchStartX;
+        if (Math.abs(diff) < minSwipeDistance) return;
+        
+        const tabs = ['calculator', 'drugs', 'tools'];
+        const current = AppState.currentTab;
+        let newIndex = tabs.indexOf(current);
+        if (diff > 0) {
+            // swipe right → previous tab
+            newIndex = (newIndex - 1 + tabs.length) % tabs.length;
+        } else {
+            // swipe left → next tab
+            newIndex = (newIndex + 1) % tabs.length;
+        }
+        if (newIndex !== tabs.indexOf(current)) {
+            switchTab(tabs[newIndex]);
+            haptic(20);
+        }
+    }, { passive: true });
+}
+// ============================================
+// CUSTOM NUMERIC KEYPAD (Mobile only)
+// ============================================
+let activeNumericInput = null;
+let keypad = null;
 
+function createNumericKeypad() {
+    const pad = document.createElement('div');
+    pad.className = 'custom-keypad';
+    pad.innerHTML = `
+        <button data-value="7">7</button>
+        <button data-value="8">8</button>
+        <button data-value="9">9</button>
+        <button class="keypad-backspace" data-action="backspace"><i class="fas fa-delete-left"></i></button>
+        <button data-value="4">4</button>
+        <button data-value="5">5</button>
+        <button data-value="6">6</button>
+        <button data-value=".">.</button>
+        <button data-value="1">1</button>
+        <button data-value="2">2</button>
+        <button data-value="3">3</button>
+        <button data-value="0">0</button>
+        <button class="keypad-done" data-action="done">✔ تأیید</button>
+    `;
+    document.body.appendChild(pad);
+    
+    pad.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        if (!activeNumericInput) return;
+        
+        const value = btn.dataset.value;
+        const action = btn.dataset.action;
+        
+        if (action === 'backspace') {
+            let current = activeNumericInput.value;
+            activeNumericInput.value = current.slice(0, -1);
+        } else if (action === 'done') {
+            hideNumericKeypad();
+            activeNumericInput.blur();
+        } else if (value !== undefined) {
+            let current = activeNumericInput.value;
+            if (value === '.' && current.includes('.')) return;
+            activeNumericInput.value = current + value;
+        }
+        activeNumericInput.dispatchEvent(new Event('input', { bubbles: true }));
+        haptic(20);
+    });
+    return pad;
+}
+
+function showNumericKeypad(inputElement) {
+    if (!keypad) keypad = createNumericKeypad();
+    if (activeNumericInput === inputElement) return;
+    hideNumericKeypad();
+    activeNumericInput = inputElement;
+    activeNumericInput.setAttribute('readonly', 'readonly');
+    keypad.style.display = 'grid';
+}
+
+function hideNumericKeypad() {
+    if (keypad) keypad.style.display = 'none';
+    if (activeNumericInput) {
+        activeNumericInput.removeAttribute('readonly');
+        activeNumericInput = null;
+    }
+}
+
+function initCustomNumericKeypad() {
+    if (window.innerWidth > 768) return; // desktop only
+    const numericInputs = ['doctorOrder', 'patientWeight', 'customVolume'];
+    numericInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('focus', () => showNumericKeypad(input));
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                if (document.activeElement !== input) hideNumericKeypad();
+            }, 150);
+        });
+    });
+    // Also handle manual calculation inputs
+    const manualInputs = ['manualStrength', 'manualVialVolume', 'manualSolutionVolume', 'manualDesiredDose', 'manualPatientWeight'];
+    manualInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('focus', () => showNumericKeypad(input));
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                if (document.activeElement !== input) hideNumericKeypad();
+            }, 150);
+        });
+    });
+}
 // ============================================
 // REVERSE TOOLTIP
 // ============================================
