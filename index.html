@@ -1171,5 +1171,19 @@
             });
         }
     </script>
+    <script>
+    // Safety timeout: force hide loading screen after 5 seconds
+    setTimeout(function() {
+        var loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen && loadingScreen.style.display !== 'none') {
+            if (typeof window.hideLoadingScreen === 'function') {
+                window.hideLoadingScreen();
+            } else {
+                loadingScreen.classList.add('fade-out');
+                setTimeout(function() { loadingScreen.style.display = 'none'; }, 550);
+            }
+        }
+    }, 5000);
+</script>
 </body>
 </html>
