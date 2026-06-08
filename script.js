@@ -38,6 +38,52 @@ const AppState = {
         { status: 'در حال اعمال تنظیمات...', pct: 75 },
         { status: 'آماده است!', pct: 100 }
     ];
+    function applyThemeToLoadingScreen() {
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (!loadingScreen) return;
+
+    // Get saved settings
+    let colorTheme = 'default';
+    let isDark = false; // default to light
+    try {
+        const savedSettings = localStorage.getItem('appSettings');
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            colorTheme = settings.colorTheme || 'default';
+            const themeMode = settings.themeMode || 'light';
+            // Determine if dark mode should be active (honor auto)
+            if (themeMode === 'dark') isDark = true;
+            else if (themeMode === 'auto') {
+                isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            } else {
+                isDark = false;
+            }
+        } else {
+            // Fallback: check legacy theme
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') isDark = true;
+        }
+    } catch(e) { /* ignore */ }
+
+    // Define theme gradients (same as in THEMES object but simplified for loading)
+    const themeGradients = {
+        default: { light: 'linear-gradient(145deg, #667eea 0%, #764ba2 100%)', dark: 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)' },
+        fox:     { light: 'linear-gradient(145deg, #f97316 0%, #dc2626 100%)', dark: 'linear-gradient(145deg, #2d1a11 0%, #1f0f0a 100%)' },
+        ocean:   { light: 'linear-gradient(145deg, #0ea5e9 0%, #0d9488 100%)', dark: 'linear-gradient(145deg, #0c4a6e 0%, #0f3a3a 100%)' },
+        rose:    { light: 'linear-gradient(145deg, #f43f5e 0%, #ec4899 100%)', dark: 'linear-gradient(145deg, #2d1321 0%, #1f0f18 100%)' },
+        forest:  { light: 'linear-gradient(145deg, #22c55e 0%, #14b8a6 100%)', dark: 'linear-gradient(145deg, #14532d 0%, #115e59 100%)' }
+    };
+
+    const fallbackLight = 'linear-gradient(145deg, #667eea 0%, #764ba2 100%)';
+    const fallbackDark  = 'linear-gradient(145deg, #1f2937 0%, #111827 100%)';
+
+    let gradient = isDark ? fallbackDark : fallbackLight;
+    if (themeGradients[colorTheme]) {
+        gradient = isDark ? themeGradients[colorTheme].dark : themeGradients[colorTheme].light;
+    }
+
+    loadingScreen.style.background = gradient;
+}
 
     let tipIndex = 0;
     function rotateTip() {
@@ -63,6 +109,7 @@ const AppState = {
     };
 
     document.addEventListener('DOMContentLoaded', () => {
+        applyThemeToLoadingScreen();
         const tipInterval = setInterval(rotateTip, 1800);
         let i = 0;
         function runStep() {
