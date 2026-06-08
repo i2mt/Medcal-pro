@@ -3188,7 +3188,19 @@ function setupUserName() {
     const saveBtn = document.getElementById('userNameSaveBtn');
     const hint    = document.getElementById('userNameHint');
     if (!input || !saveBtn) return;
+const saveBtn = document.getElementById('userNameSaveBtn');
+const userNameInput = document.getElementById('userNameInput');
 
+function updateSaveButtonState() {
+    if (userNameInput.value.trim().length > 0) {
+        saveBtn.classList.add('active');
+    } else {
+        saveBtn.classList.remove('active');
+    }
+}
+
+userNameInput.addEventListener('input', updateSaveButtonState);
+updateSaveButtonState();
     // Load stored name
     input.value = localStorage.getItem('userName') || '';
 
