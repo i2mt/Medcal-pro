@@ -45,7 +45,7 @@
 }
 
 .dark-mode {
-    /* ===== FIX: Removed gradient overrides so theme colors work ===== */
+    /* Only background/border/text colors – gradients come from theme system */
     --bg-primary: #111827;
     --bg-secondary: #1f2937;
     --surface: #1f2937;
@@ -59,7 +59,7 @@
     --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
     --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.65);
     --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.3);
-    /* No --gradient-primary or --gradient-secondary here */
+    /* No gradient overrides here – themes control gradients */
 }
 
 .dark-mode body,
@@ -123,6 +123,7 @@
     box-shadow: 0 0 0 1px var(--primary), 0 4px 12px rgba(129, 140, 248, 0.2) !important;
 }
 
+/* ===== FIX: Active buttons get gradient background and white text ===== */
 .dark-mode .method-btn-compact.active,
 .dark-mode .volume-preset-btn.active,
 .dark-mode .ampoule-type-btn.active,
@@ -131,6 +132,14 @@
     border-color: transparent !important;
     color: white !important;
     box-shadow: 0 4px 15px rgba(129, 140, 248, 0.35) !important;
+}
+
+/* Ensure all child elements inside active volume button also white */
+.dark-mode .volume-preset-btn.active .number,
+.dark-mode .volume-preset-btn.active .unit-text,
+.dark-mode .volume-preset-btn.active .custom-text,
+.dark-mode .volume-preset-btn.active span {
+    color: white !important;
 }
 
 .dark-mode .drug-item-compact.selected {
@@ -307,16 +316,6 @@
     -webkit-text-fill-color: var(--text-primary) !important;
 }
 
-/* ===== FIX: Active volume preset buttons – white text ===== */
-.dark-mode .volume-preset-btn.active,
-.dark-mode .volume-preset-btn.active .number,
-.dark-mode .volume-preset-btn.active .unit-text,
-.dark-mode .volume-preset-btn.active .custom-text,
-.dark-mode .volume-preset-btn.active span {
-    color: white !important;
-    background: none !important;
-}
-
 .dark-mode .result-unit-enhanced {
     color: var(--text-secondary) !important;
 }
@@ -416,7 +415,7 @@ html {
 }
 
 body {
-    background: var(--surface); /* match tab bar so any gap is invisible */
+    background: var(--surface);
     color: var(--text-primary);
     line-height: 1.7;
     min-height: 100vh;
@@ -797,7 +796,6 @@ select {
 }
 
 .app-header {
-    /* height grows to absorb the status bar safe area */
     min-height: calc(60px + env(safe-area-inset-top, 0px));
     height: auto;
     background: var(--surface);
@@ -838,7 +836,6 @@ select {
 }
 
 .logo-text h1 {
-    /* FIX: Larger title */
     font-size: 1.5rem;
     font-weight: 700;
     background: var(--gradient-primary);
@@ -916,7 +913,6 @@ select {
     padding: 6px 4px;
     padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
     z-index: 1000;
-    /* Total height = tab items + safe area so background fills the gap naturally */
     min-height: calc(56px + env(safe-area-inset-bottom, 0px));
 }
 
@@ -2400,7 +2396,6 @@ select {
         top: 0;
         left: 0;
         right: 0;
-        /* Extend body to the very physical bottom including safe area */
         bottom: 0;
         width: 100%;
         overflow: hidden;
@@ -2411,12 +2406,10 @@ select {
         top: 0;
         left: 0;
         right: 0;
-        /* Fill to physical bottom — safe area padding handled by children */
         bottom: 0;
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        /* Background covers the safe area zone at the bottom */
         background: var(--surface);
     }
 
@@ -2462,7 +2455,6 @@ select {
         top: calc(50px + env(safe-area-inset-top, 0px));
         left: 0;
         right: 0;
-        /* Use JS-measured tab bar height so it's always accurate after layout */
         bottom: var(--tab-bar-height, calc(56px + env(safe-area-inset-bottom, 0px)));
         overflow: hidden;
         display: flex;
@@ -2510,7 +2502,6 @@ select {
         overflow: hidden;
     }
 
-    /* Drug sidebar horizontal scroll */
     .drug-sidebar {
         flex: 0 0 auto !important;
         height: auto !important;
@@ -2634,48 +2625,41 @@ select {
         display: none !important;
     }
 
-    /* Inside @media (max-width: 768px) - Replace existing rules */
+    .calculator-main {
+        flex: 1;
+        padding: 10px !important;
+        padding-bottom: 0 !important;
+        gap: 8px !important;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
 
-/* The scrollable main area: no bottom padding */
-.calculator-main {
-    flex: 1;
-    padding: 10px !important;
-    padding-bottom: 0 !important;          /* ✅ Critical: removes the gap below */
-    gap: 8px !important;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-}
+    .calculate-btn-sticky-wrap {
+        position: sticky !important;
+        bottom: 0 !important;
+        background: var(--bg-primary);
+        padding: 6px 12px 8px 12px !important;
+        margin: 0 !important;
+        z-index: 15;
+        border-top: 1px solid var(--border);
+        box-shadow: none;
+    }
 
-/* The button wrapper: sticks to bottom of .calculator-main */
-.calculate-btn-sticky-wrap {
-    position: sticky !important;
-    bottom: 0 !important;
-    background: var(--bg-primary);
-    padding: 6px 12px 8px 12px !important;  /* Reduced top/bottom padding */
-    margin: 0 !important;
-    z-index: 15;
-    border-top: 1px solid var(--border);
-    box-shadow: none;
-}
+    .calculate-btn-sticky-wrap::before {
+        display: none !important;
+        content: none !important;
+    }
 
-/* Remove any pseudo-element that could add a blurry border */
-.calculate-btn-sticky-wrap::before {
-    display: none !important;
-    content: none !important;
-}
+    .calculate-btn-enhanced {
+        margin: 0 !important;
+        padding: 10px 12px !important;
+        font-size: 14px !important;
+        min-height: 44px !important;
+        border-radius: 10px !important;
+        box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+    }
 
-/* The button itself: smaller, more compact */
-.calculate-btn-enhanced {
-    margin: 0 !important;
-    padding: 10px 12px !important;
-    font-size: 14px !important;
-    min-height: 44px !important;
-    border-radius: 10px !important;
-    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
-}
-
-    /* Selected drug header */
     .selected-drug-compact {
         padding: 10px;
         gap: 8px;
@@ -2844,7 +2828,6 @@ select {
         font-size: 12px;
     }
 
-    /* Other tabs */
     #convertersTab,
     #drugsTab,
     #toolsTab {
@@ -2926,7 +2909,6 @@ select {
         font-size: 16px !important;
     }
 
-    /* Modals */
     .modal {
         padding: 10px;
     }
@@ -3235,7 +3217,6 @@ select {
     font-size: 1.15em;
 }
 
-/* Result values: significantly larger so they're easy to read at bedside */
 .large-font .result-value-enhanced {
     font-size: 32px !important;
 }
@@ -3257,7 +3238,6 @@ select {
     font-size: 0.9em;
 }
 
-/* Tool results also scale */
 .large-font .tool-result,
 .large-font .dose-calc-row strong,
 .large-font .compat-result-box strong {
@@ -3769,7 +3749,7 @@ input[type="search"]::placeholder {
 }
 
 .dark-mode .volume-preset-btn:not(.active) .number {
-    color: var(--primary) !important;
+    color: var(--text-primary) !important;
 }
 
 .dark-mode .volume-preset-btn:not(.active) .unit-text {
@@ -4127,26 +4107,38 @@ input[type="search"]::placeholder {
     padding-bottom: 20px;
 }
 
-/* ===== FIX: Accordion body styles (collapsed height) ===== */
+/* ===== FIX: Accordion body – completely hidden when collapsed ===== */
 .accordion-body {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1);
-    padding: 0;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
 }
 .accordion-item.open .accordion-body {
-    padding: 12px 14px 14px;
     max-height: 1500px;
+    padding: 12px 14px 14px !important;
 }
 
-/* ===== FIX: Drug library specific accordion ===== */
+/* ===== FIX: Drug library specific – ensure no visible content when closed ===== */
 .qref-accordion-item .accordion-body {
-    padding: 0;
+    padding: 0 !important;
 }
 .qref-accordion-item.open .accordion-body {
-    padding: 0 12px 12px;
+    padding: 0 12px 12px !important;
 }
 
+/* ===== Ensure the content inside body is not visible when closed ===== */
+.accordion-body > * {
+    opacity: 1;
+    transition: opacity 0.2s;
+}
+.accordion-item:not(.open) .accordion-body > * {
+    display: none;
+}
+
+/* Rest of the drug library styles (keep unchanged) */
 .qref-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -4432,7 +4424,6 @@ input[type="search"]::placeholder {
     background: var(--surface);
     border-color: #374151;
 }
-/* Keep the drug-color accent edge visible in dark mode too */
 .dark-mode .qref-header::before {
     opacity: 0.9;
 }
@@ -4973,59 +4964,50 @@ input[type="search"]::placeholder {
     background: var(--bg-secondary);
     border-color: var(--border);
 }
-/* FINAL OVERRIDE: Force active volume button text to white in dark mode */
+
+/* ===== Active volume preset buttons – ensure gradient and white text ===== */
+.dark-mode .volume-preset-btn.active,
 .dark-mode .volume-preset-btn.active .number,
 .dark-mode .volume-preset-btn.active .unit-text,
 .dark-mode .volume-preset-btn.active .custom-text,
 .dark-mode .volume-preset-btn.active span {
+    background: var(--gradient-primary) !important;
     color: white !important;
+    border-color: transparent !important;
 }
 
-/* Header button animations — JS-driven classes for mobile compatibility */
+/* Header button animations */
 .icon-btn {
     transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
-
-/* Press scale for all buttons */
 .icon-btn.btn-press {
     transform: scale(0.88);
 }
-
-/* Theme button: full spin */
 #themeToggle.btn-spin i {
     animation: spinOnce 0.45s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
 }
-
 @keyframes spinOnce {
     0%   { transform: rotate(0deg) scale(1); }
     50%  { transform: rotate(200deg) scale(1.25); }
     100% { transform: rotate(360deg) scale(1); }
 }
-
-/* Settings button: gear wiggle */
 #settingsBtn.btn-spin i {
     animation: gearSpin 0.45s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
 }
-
 @keyframes gearSpin {
     0%   { transform: rotate(0deg) scale(1); }
     40%  { transform: rotate(90deg) scale(1.2); }
     100% { transform: rotate(60deg) scale(1); }
 }
-
-/* History button: swing */
 #historyBtn.btn-spin i {
     animation: historySpin 0.4s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
 }
-
 @keyframes historySpin {
     0%   { transform: rotate(0deg) scale(1); }
     40%  { transform: rotate(-30deg) scale(1.2); }
     70%  { transform: rotate(15deg) scale(1.1); }
     100% { transform: rotate(0deg) scale(1); }
 }
-
-/* Active/hover highlight */
 .icon-btn:hover, .icon-btn.btn-press {
     background: var(--primary-light);
     border-color: var(--primary);
@@ -5037,9 +5019,6 @@ input[type="search"]::placeholder {
     border-color: var(--primary) !important;
     color: var(--primary) !important;
 }
-
-
-/* Dark mode icon-btn */
 .dark-mode .icon-btn {
     background: var(--surface-elevated) !important;
     border-color: #4b5563 !important;
@@ -5052,12 +5031,11 @@ input[type="search"]::placeholder {
 }
 
 /* ============================================
-   REVERSE MODE BUTTON
+   REVERSE MODE BUTTON (keep original)
    ============================================ */
 .reverse-mode-row {
     margin-bottom: 12px;
 }
-
 .reverse-mode-btn {
     display: flex;
     align-items: center;
@@ -5075,28 +5053,22 @@ input[type="search"]::placeholder {
     transition: border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
     position: relative;
 }
-
 .reverse-mode-label {
     flex: 1;
     text-align: right;
 }
-
 .reverse-mode-btn i {
     font-size: 13px;
     flex-shrink: 0;
     transition: transform 0.4s ease;
 }
-
 .reverse-mode-btn.active i {
     transform: rotate(180deg);
 }
-
 .reverse-mode-btn:hover {
     border-color: var(--primary);
     color: var(--primary);
 }
-
-/* iOS-style toggle track */
 .reverse-ios-toggle {
     width: 44px;
     height: 26px;
@@ -5107,7 +5079,6 @@ input[type="search"]::placeholder {
     transition: background 0.3s ease;
     margin-right: 2px;
 }
-
 .reverse-ios-knob {
     position: absolute;
     top: 3px;
@@ -5119,22 +5090,16 @@ input[type="search"]::placeholder {
     box-shadow: 0 1px 4px rgba(0,0,0,0.25);
     transition: transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
-
 .reverse-ios-toggle.on {
     background: var(--primary);
 }
-
 .reverse-ios-toggle.on .reverse-ios-knob {
     transform: translateX(18px);
 }
-
-/* Active button state (text colour only — track does its own thing) */
 .reverse-mode-btn.active {
     border-color: var(--primary);
     color: var(--primary);
 }
-
-/* Dark mode */
 .dark-mode .reverse-mode-btn {
     background: var(--surface-elevated) !important;
     border-color: #4b5563 !important;
@@ -5154,7 +5119,7 @@ input[type="search"]::placeholder {
 }
 
 /* ============================================
-   REVERSE TOOLTIP OVERLAY
+   REVERSE TOOLTIP OVERLAY (keep original)
    ============================================ */
 .reverse-tooltip-overlay {
     position: fixed;
@@ -5166,18 +5131,15 @@ input[type="search"]::placeholder {
     opacity: 0;
     transition: opacity 0.35s ease;
 }
-
 .reverse-tooltip-overlay.visible {
     opacity: 1;
 }
-
 .reverse-tooltip-backdrop {
     position: absolute;
     inset: 0;
     background: rgba(0,0,0,0.55);
     backdrop-filter: blur(3px);
 }
-
 .reverse-tooltip-box {
     position: relative;
     z-index: 1;
@@ -5190,7 +5152,6 @@ input[type="search"]::placeholder {
     box-shadow: 0 20px 50px rgba(0,0,0,0.3);
     animation: onboardingPop 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
 }
-
 .reverse-tooltip-icon {
     width: 52px;
     height: 52px;
@@ -5204,7 +5165,6 @@ input[type="search"]::placeholder {
     margin: 0 auto 14px;
     box-shadow: 0 6px 18px rgba(102,126,234,0.4);
 }
-
 .reverse-tooltip-title {
     font-size: 16px;
     font-weight: 700;
@@ -5212,7 +5172,6 @@ input[type="search"]::placeholder {
     font-family: var(--font-persian);
     margin: 0 0 10px;
 }
-
 .reverse-tooltip-body {
     font-size: 13px;
     color: var(--text-secondary);
@@ -5220,7 +5179,6 @@ input[type="search"]::placeholder {
     line-height: 1.7;
     margin: 0 0 20px;
 }
-
 .reverse-tooltip-btn {
     width: 100%;
     padding: 11px;
@@ -5235,9 +5193,7 @@ input[type="search"]::placeholder {
     transition: var(--transition);
     box-shadow: 0 4px 14px rgba(102,126,234,0.35);
 }
-
 .reverse-tooltip-btn:active { transform: scale(0.97); }
-
 .dark-mode .reverse-tooltip-box {
     background: var(--bg-secondary) !important;
     border: 1px solid var(--border) !important;
@@ -5263,12 +5219,10 @@ input[type="search"]::placeholder {
     border: 1px solid var(--border-light);
     animation: fadeSlideIn 0.25s ease;
 }
-
 @keyframes fadeSlideIn {
     from { opacity: 0; transform: translateY(-6px); }
     to   { opacity: 1; transform: translateY(0); }
 }
-
 .dose-range-dot {
     width: 10px;
     height: 10px;
@@ -5276,46 +5230,40 @@ input[type="search"]::placeholder {
     flex-shrink: 0;
     transition: background 0.3s ease;
 }
-
 .dose-range-text {
     font-size: 12px;
     font-family: var(--font-persian);
     font-weight: 500;
     transition: color 0.3s ease;
 }
-
 .dark-mode .dose-range-indicator {
     background: var(--surface-elevated) !important;
     border-color: var(--border) !important;
 }
 
 /* ============================================
-   HISTORY ITEMS — CLICKABLE + RESTORE
+   HISTORY ITEMS — CLICKABLE + RESTORE (keep original)
    ============================================ */
 .history-item {
     cursor: pointer;
     transition: var(--transition);
     position: relative;
 }
-
 .history-item:hover {
     border-color: var(--primary) !important;
     box-shadow: 0 2px 10px rgba(102, 126, 234, 0.15);
     transform: translateY(-1px);
 }
-
 .history-restore-hint {
     font-size: 11px;
     opacity: 0.5;
     margin-right: 6px;
     transition: opacity 0.2s;
 }
-
 .history-item:hover .history-restore-hint {
     opacity: 1;
     color: var(--primary);
 }
-
 .history-restore-bar {
     font-size: 11px;
     text-align: center;
@@ -5327,18 +5275,15 @@ input[type="search"]::placeholder {
     transition: opacity 0.2s;
     font-family: var(--font-persian);
 }
-
 .history-item:hover .history-restore-bar {
     opacity: 1;
 }
-
 .dark-mode .history-item:hover {
     border-color: var(--primary) !important;
 }
 
-
 /* ============================================
-   ONBOARDING OVERLAY
+   ONBOARDING OVERLAY (keep original)
    ============================================ */
 .onboarding-overlay {
     position: fixed;
@@ -5350,18 +5295,15 @@ input[type="search"]::placeholder {
     opacity: 0;
     transition: opacity 0.4s ease;
 }
-
 .onboarding-overlay.visible {
     opacity: 1;
 }
-
 .onboarding-backdrop {
     position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.65);
     backdrop-filter: blur(4px);
 }
-
 .onboarding-box {
     position: relative;
     z-index: 1;
@@ -5374,12 +5316,10 @@ input[type="search"]::placeholder {
     text-align: center;
     animation: onboardingPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
-
 @keyframes onboardingPop {
     from { transform: scale(0.85) translateY(20px); opacity: 0; }
     to   { transform: scale(1) translateY(0); opacity: 1; }
 }
-
 .onboarding-logo {
     width: 64px;
     height: 64px;
@@ -5393,7 +5333,6 @@ input[type="search"]::placeholder {
     margin: 0 auto 16px;
     box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
 }
-
 .onboarding-title {
     font-size: 18px;
     font-weight: 700;
@@ -5401,14 +5340,12 @@ input[type="search"]::placeholder {
     font-family: var(--font-persian);
     margin: 0 0 4px;
 }
-
 .onboarding-subtitle {
     font-size: 13px;
     color: var(--text-tertiary);
     font-family: var(--font-persian);
     margin: 0 0 20px;
 }
-
 .onboarding-steps {
     display: flex;
     flex-direction: column;
@@ -5416,14 +5353,12 @@ input[type="search"]::placeholder {
     text-align: right;
     margin-bottom: 24px;
 }
-
 .onboarding-step {
     display: flex;
     align-items: flex-start;
     gap: 12px;
     direction: rtl;
 }
-
 .onboarding-step-num {
     width: 28px;
     height: 28px;
@@ -5438,27 +5373,23 @@ input[type="search"]::placeholder {
     flex-shrink: 0;
     font-family: var(--font-persian);
 }
-
 .onboarding-step-body {
     display: flex;
     flex-direction: column;
     gap: 2px;
 }
-
 .onboarding-step-body strong {
     font-size: 13px;
     font-weight: 600;
     color: var(--text-primary);
     font-family: var(--font-persian);
 }
-
 .onboarding-step-body span {
     font-size: 12px;
     color: var(--text-secondary);
     font-family: var(--font-persian);
     line-height: 1.5;
 }
-
 .onboarding-btn {
     width: 100%;
     padding: 13px;
@@ -5478,16 +5409,13 @@ input[type="search"]::placeholder {
     transition: var(--transition);
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
-
 .onboarding-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 }
-
 .onboarding-btn:active {
     transform: scale(0.98);
 }
-
 .onboarding-skip {
     font-size: 12px;
     color: var(--text-tertiary);
@@ -5498,12 +5426,9 @@ input[type="search"]::placeholder {
     text-underline-offset: 3px;
     transition: color 0.2s;
 }
-
 .onboarding-skip:hover {
     color: var(--text-secondary);
 }
-
-/* Dark mode onboarding */
 .dark-mode .onboarding-box {
     background: var(--bg-secondary) !important;
     border: 1px solid var(--border) !important;
@@ -5539,20 +5464,17 @@ input[type="search"]::placeholder {
     box-shadow: 0 2px 8px rgba(0,0,0,0.25);
     animation: slideDown 0.3s ease;
 }
-
 .offline-bar i { font-size: 13px; }
-
 .offline-bar.online-flash {
     background: #065f46;
 }
-
 @keyframes slideDown {
     from { transform: translateY(-100%); opacity: 0; }
     to   { transform: translateY(0); opacity: 1; }
 }
 
 /* ============================================
-   COMPATIBILITY RESULT BOXES
+   COMPATIBILITY RESULT BOXES (keep original)
    ============================================ */
 .compat-result-box {
     display: flex;
@@ -5564,47 +5486,39 @@ input[type="search"]::placeholder {
     margin-top: 8px;
     border: 1px solid transparent;
 }
-
 .compat-result-box i {
     font-size: 20px;
     flex-shrink: 0;
     margin-top: 2px;
 }
-
 .compat-result-box div {
     display: flex;
     flex-direction: column;
     gap: 3px;
 }
-
 .compat-result-box strong {
     font-size: 13px;
     font-weight: 600;
 }
-
 .compat-result-box span {
     font-size: 12px;
     opacity: 0.8;
 }
-
 .compat-result-box.success {
     background: rgba(52, 211, 153, 0.12);
     border-color: #34d399;
     color: #065f46;
 }
-
 .compat-result-box.danger {
     background: rgba(248, 113, 113, 0.12);
     border-color: #f87171;
     color: #7f1d1d;
 }
-
 .compat-result-box.warn {
     background: rgba(251, 191, 36, 0.12);
     border-color: #fbbf24;
     color: #78350f;
 }
-
 .dark-mode .compat-result-box.success {
     background: rgba(52, 211, 153, 0.15) !important;
     color: #6ee7b7 !important;
@@ -5617,7 +5531,6 @@ input[type="search"]::placeholder {
     background: rgba(251, 191, 36, 0.15) !important;
     color: #fde68a !important;
 }
-
 .compat-sol-note {
     font-size: 12px;
     font-family: var(--font-persian);
@@ -5632,7 +5545,7 @@ input[type="search"]::placeholder {
 }
 
 /* ============================================
-   DOSE CALC RESULT
+   DOSE CALC RESULT (keep original)
    ============================================ */
 .dose-calc-result {
     display: flex;
@@ -5640,7 +5553,6 @@ input[type="search"]::placeholder {
     gap: 8px;
     padding: 10px 0;
 }
-
 .dose-calc-row {
     display: flex;
     justify-content: space-between;
@@ -5652,11 +5564,9 @@ input[type="search"]::placeholder {
     border-radius: 10px;
     border: 1px solid var(--border);
 }
-
 .dose-calc-row span {
     color: var(--text-secondary);
 }
-
 .dose-calc-row strong {
     color: var(--primary);
     font-weight: 700;
@@ -5664,29 +5574,23 @@ input[type="search"]::placeholder {
     direction: ltr;
     unicode-bidi: isolate;
 }
-
 .dark-mode .dose-calc-row {
     background: var(--surface-elevated) !important;
     border-color: #4b5563 !important;
 }
 
 /* ============================================
-   PWA STANDALONE MODE — iOS & Android
-   In standalone, body is position:fixed inset:0
-   so it covers the full physical screen including
-   the home indicator area. The tab bar background
-   fills that zone via its own height.
+   PWA STANDALONE MODE
    ============================================ */
 @media (display-mode: standalone) {
     body {
-        /* Ensure we cover the full physical screen */
         top: 0;
         bottom: 0;
     }
 }
 
 /* ============================================
-   DRIP RATE ROW
+   DRIP RATE ROW (keep original)
    ============================================ */
 .drip-rate-row {
     display: flex;
@@ -5699,7 +5603,6 @@ input[type="search"]::placeholder {
     border: 1.5px solid var(--primary);
     animation: fadeSlideIn 0.25s ease;
 }
-
 .drip-rate-icon {
     width: 36px;
     height: 36px;
@@ -5712,21 +5615,18 @@ input[type="search"]::placeholder {
     font-size: 15px;
     flex-shrink: 0;
 }
-
 .drip-rate-body {
     display: flex;
     flex-direction: column;
     gap: 2px;
     flex: 1;
 }
-
 .drip-rate-label {
     font-size: 11.5px;
     color: var(--text-secondary);
     font-family: var(--font-persian);
     direction: rtl;
 }
-
 .drip-rate-value {
     font-size: 17px;
     font-weight: 700;
@@ -5735,7 +5635,6 @@ input[type="search"]::placeholder {
     direction: ltr;
     unicode-bidi: isolate;
 }
-
 .drip-rate-unit {
     font-size: 12px;
     font-weight: 500;
@@ -5743,16 +5642,13 @@ input[type="search"]::placeholder {
     color: var(--text-secondary);
     direction: rtl;
 }
-
 .dark-mode .drip-rate-row {
     background: rgba(96, 165, 250, 0.1) !important;
     border-color: var(--primary) !important;
 }
-
 .dark-mode .drip-rate-label {
     color: var(--text-secondary) !important;
 }
-
 .dark-mode .drip-rate-value {
     color: var(--primary) !important;
 }
