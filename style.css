@@ -6530,7 +6530,8 @@ input[type="search"]::placeholder {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    direction: ltr;
+    direction: rtl;
+    justify-content: flex-start;
 }
 
 .qref-ampoule-item {
