@@ -3167,19 +3167,17 @@ function showGreetingBanner() {
     const greeting = getGreeting();
     textEl.textContent = name ? `${greeting}، ${name} عزیز 👋` : `${greeting} 👋`;
 
-    banner.classList.add('banner-visible');
+    banner.style.display = 'flex';
     banner.classList.remove('banner-hiding');
+    banner.classList.add('banner-visible');
 
-    // Auto-dismiss after 4.5 seconds
-    let autoDismiss = setTimeout(() => dismissBanner(), 4500);
+    // Auto-dismiss after 4.5 s
+    let autoDismiss = setTimeout(dismissBanner, 4500);
 
     function dismissBanner() {
         clearTimeout(autoDismiss);
         banner.classList.add('banner-hiding');
-        banner.addEventListener('animationend', () => {
-            banner.classList.remove('banner-visible');
-            banner.classList.remove('banner-hiding');
-        }, { once: true });
+        banner.addEventListener('animationend', () => { banner.style.display = 'none'; }, { once: true });
     }
 
     closeBtn.addEventListener('click', dismissBanner);
@@ -3190,19 +3188,7 @@ function setupUserName() {
     const saveBtn = document.getElementById('userNameSaveBtn');
     const hint    = document.getElementById('userNameHint');
     if (!input || !saveBtn) return;
-const saveBtn = document.getElementById('userNameSaveBtn');
-const userNameInput = document.getElementById('userNameInput');
 
-function updateSaveButtonState() {
-    if (userNameInput.value.trim().length > 0) {
-        saveBtn.classList.add('active');
-    } else {
-        saveBtn.classList.remove('active');
-    }
-}
-
-userNameInput.addEventListener('input', updateSaveButtonState);
-updateSaveButtonState();
     // Load stored name
     input.value = localStorage.getItem('userName') || '';
 
