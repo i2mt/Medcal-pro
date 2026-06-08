@@ -6898,16 +6898,18 @@ html {
     padding: 8px 14px 10px;
     border-top: 1px solid var(--border-light);
     background: var(--surface-elevated);
-    direction: ltr;
+    direction: ltr; /* Force LTR so input comes before unit, unit appears on right */
 }
 
 .weight-input-row i {
+    order: 1;
     color: var(--text-tertiary);
     font-size: 13px;
     flex-shrink: 0;
 }
 
 .weight-input-row input {
+    order: 2;
     flex: 1;
     border: 1.5px solid var(--border);
     border-radius: 8px;
@@ -6920,13 +6922,8 @@ html {
     min-width: 0;
 }
 
-.weight-input-row input:focus {
-    border-color: var(--primary);
-    outline: none;
-    box-shadow: 0 0 0 3px var(--primary-light);
-}
-
 .weight-input-row .weight-unit {
+    order: 3;
     font-size: 13px;
     font-weight: 600;
     color: var(--text-secondary);
