@@ -305,15 +305,15 @@
 
 /* ===== FIX: Inactive volume preset buttons – solid color, not gradient ===== */
 .dark-mode .volume-preset-btn:not(.active) {
-    background: var(--surface-elevated) !important;
-    border-color: #4b5563 !important;
-    color: var(--text-primary) !important;
+    background: #2d3748 !important;  /* lighter than surface */
+    border-color: #4a5568 !important;
+    color: #e2e8f0 !important;       /* brighter text */
 }
 .dark-mode .volume-preset-btn:not(.active) .number,
 .dark-mode .volume-preset-btn:not(.active) .unit-text {
-    color: var(--text-primary) !important;
+        color: #e2e8f0 !important;
     background: none !important;
-    -webkit-text-fill-color: var(--text-primary) !important;
+    -webkit-text-fill-color: #e2e8f0 !important;
 }
 
 .dark-mode .result-unit-enhanced {
@@ -7248,192 +7248,145 @@ html {
     z-index: 10;
     border-top: 1px solid var(--border);
 }
+
 /* ============================================
-   LARGE FONT MODE - GLOBAL SCALING
+   GREETING BANNER
    ============================================ */
-.large-font {
-    font-size: 18px;
-}
-
-/* Base text elements */
-.large-font body,
-.large-font p,
-.large-font span:not(.latin-inline):not(.persian-inline),
-.large-font div:not(.result-item-enhanced):not(.control-group),
-.large-font .step-content,
-.large-font .warning-text,
-.large-font .compatibility-list,
-.large-font .drug-name-compact,
-.large-font .selected-drug-name-compact,
-.large-font .selected-drug-desc-compact,
-.large-font .drug-library-label,
-.large-font .drug-library-value,
-.large-font .history-drug,
-.large-font .history-details,
-.large-font .about-row,
-.large-font .setting-item span,
-.large-font .toast-title,
-.large-font .toast-message,
-.large-font .guide-step .step-content,
-.large-font .warning-item .warning-text {
-    font-size: 1.1em;
-}
-
-/* Headers and titles */
-.large-font h1, .large-font h2, .large-font h3, .large-font h4,
-.large-font .logo-text h1,
-.large-font .converters-container h2,
-.large-font .drugs-container h2,
-.large-font .tools-container h2,
-.large-font .modal-header h3,
-.large-font .guide-header,
-.large-font .warnings-header,
-.large-font .compatibility-header,
-.large-font .results-header-row h3 {
-    font-size: 1.2em;
-}
-
-/* Form elements */
-.large-font input,
-.large-font select,
-.large-font textarea,
-.large-font .dose-input-wrapper input,
-.large-font .manual-input-with-unit input,
-.large-font .weight-input-row input,
-.large-font .volume-custom-input input {
-    font-size: 1.05em !important;
-    padding: 10px 12px !important;
-}
-
-/* Buttons */
-.large-font .calculate-btn-enhanced,
-.large-font .converter-btn,
-.large-font .tool-btn,
-.large-font .setting-btn,
-.large-font .method-btn-compact,
-.large-font .volume-preset-btn,
-.large-font .ampoule-type-btn,
-.large-font .qref-calc-btn,
-.large-font .tab-item span,
-.large-font .icon-btn {
-    font-size: 1em;
-    min-height: 48px;
-}
-
-/* Results cards */
-.large-font .result-value-enhanced {
-    font-size: 32px !important;
-}
-.large-font .result-item-enhanced.highlight .result-value-enhanced {
-    font-size: 36px !important;
-}
-.large-font .result-label-enhanced,
-.large-font .result-unit-enhanced {
-    font-size: 13px !important;
-}
-
-/* Drug library cards */
-.large-font .qref-name {
-    font-size: 16px;
-}
-.large-font .qref-english {
+.greeting-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 16px;
+    background: var(--gradient-primary);
+    color: white;
+    font-family: var(--font-persian);
     font-size: 13px;
-}
-.large-font .qref-info-label,
-.large-font .qref-info-val,
-.large-font .qref-ampoule-item {
-    font-size: 13px;
-}
-.large-font .qref-chip-value {
-    font-size: 13px;
-}
-.large-font .qref-chip-label {
-    font-size: 11px;
+    font-weight: 500;
+    direction: rtl;
+    position: relative;
+    z-index: 999;
+    animation: bannerSlideDown 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* GCS and Burns */
-.large-font .gcs-domain-title,
-.large-font .gcs-btn-label,
-.large-font .gcs-note-item span,
-.large-font .burns-view-label,
-.large-font .burns-chip,
-.large-font .burns-result-label,
-.large-font .burns-note-item span {
-    font-size: 1em;
-}
-.large-font .gcs-total-score {
-    font-size: 40px;
+.greeting-banner.banner-hiding {
+    animation: bannerSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* Drip rate row */
-.large-font .drip-rate-label {
+@keyframes bannerSlideDown {
+    from { opacity: 0; transform: translateY(-100%); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bannerSlideUp {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(-100%); }
+}
+
+.greeting-text {
+    flex: 1;
+}
+
+.greeting-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.75);
+    cursor: pointer;
+    padding: 2px 6px;
     font-size: 12px;
-}
-.large-font .drip-rate-value {
-    font-size: 19px;
-}
-
-/* Toast messages */
-.large-font .toast-title {
-    font-size: 1rem;
-}
-.large-font .toast-message {
-    font-size: 0.95rem;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+    flex-shrink: 0;
 }
 
-/* Accordion section headers */
-.large-font .accordion-title {
-    font-size: 1em;
-}
-.large-font .accordion-sub {
-    font-size: 0.85em;
-}
-.large-font .accordion-section-header span {
-    font-size: 0.9em;
+.greeting-close:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
 }
 
-/* Settings modal */
-.large-font .settings-group h4 {
-    font-size: 0.9em !important;
-}
-.large-font .setting-item span {
-    font-size: 0.95em !important;
-}
-.large-font .contact-handle {
-    font-size: 0.85em;
+/* ============================================
+   SETTINGS — USER NAME
+   ============================================ */
+.user-name-setting {
+    align-items: center;
 }
 
-/* Keep Latin inline text readable */
-.large-font .latin-inline,
-.large-font .drug-name-english,
-.large-font .drug-library-english,
-.large-font .result-unit-enhanced,
-.large-font .dose-unit-enhanced {
-    font-size: 0.9em;
+.user-name-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-/* Mobile adjustments for large font */
-@media (max-width: 768px) {
-    .large-font {
-        font-size: 16px;
-    }
-    .large-font .result-value-enhanced {
-        font-size: 24px !important;
-    }
-    .large-font .result-item-enhanced.highlight .result-value-enhanced {
-        font-size: 28px !important;
-    }
-    .large-font .method-btn-compact,
-    .large-font .volume-preset-btn,
-    .large-font .ampoule-type-btn {
-        min-height: 48px;
-        font-size: 13px !important;
-    }
-    .large-font .calculate-btn-enhanced {
-        font-size: 15px !important;
-        padding: 12px !important;
-    }
-    .large-font .gcs-total-score {
-        font-size: 32px;
-    }
+.user-name-display {
+    font-family: var(--font-persian);
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.user-name-edit-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transition: var(--transition);
+}
+
+.user-name-edit-btn:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.user-name-edit-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    align-items: center;
+}
+
+.user-name-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-persian);
+    font-size: 13px;
+    direction: rtl;
+    transition: border-color 0.2s;
+    outline: none;
+}
+
+.user-name-input:focus {
+    border-color: var(--primary);
+}
+
+.user-name-save-btn {
+    padding: 8px 14px;
+    background: var(--gradient-primary);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--font-persian);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+}
+
+.user-name-save-btn:hover {
+    opacity: 0.9;
 }
