@@ -60,8 +60,6 @@
     --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.65);
     --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.3);
     /* Gradient will be set by theme system, but define fallback */
-    --gradient-primary: linear-gradient(135deg, #60a5fa 0%, #34d399 100%);
-    --gradient-secondary: linear-gradient(135deg, #c084fc 0%, #f472b6 100%);
 }
 
 .dark-mode body,
