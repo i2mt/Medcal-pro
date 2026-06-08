@@ -3037,8 +3037,10 @@ function updateParkland() {
     const first8h = totalFluid / 2;
     const next16h = totalFluid / 2;
     parklandEl.innerHTML = '<span dir="ltr" style="display:inline-block; unicode-bidi:isolate;">' + totalFluid.toFixed(0) + ' mL</span>';
-parklandRow.querySelector('.burns-result-label').innerHTML = 'Parkland: <span dir="ltr" style="display:inline-block; unicode-bidi:isolate;">' + totalFluid.toFixed(0) + ' mL</span> (اول ۸ ساعت: <span dir="ltr">' + first8h.toFixed(0) + ' mL</span> | ۱۶ ساعت باقی: <span dir="ltr">' + next16h.toFixed(0) + ' mL</span>)';
-    
+    parklandRow.querySelector('.burns-result-label').innerHTML = 'Parkland: <span dir="ltr" style="display:inline-block; unicode-bidi:isolate;">' + totalFluid.toFixed(0) + ' mL</span> (اول ۸ ساعت: <span dir="ltr">' + first8h.toFixed(0) + ' mL</span> | ۱۶ ساعت باقی: <span dir="ltr">' + next16h.toFixed(0) + ' mL</span>)';
+    parklandRow.style.display = 'flex';
+}
+
 function resetBurns() {
     BURNS_STATE.selected.clear();
     document.querySelectorAll('.burns-region').forEach(el => el.classList.remove('selected'));
