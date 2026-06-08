@@ -396,8 +396,6 @@ function setupMobileNumericKeyboard() {
 // ============================================
 function haptic(ms) {
     if (!AppState.settings.hapticFeedback) return;
-    // navigator.vibrate is Android-only; iOS Safari does not support it.
-    // On iOS, the only haptic available from a web page is via native app bridges (e.g. Capacitor).
     try { if (navigator.vibrate) navigator.vibrate(ms || 30); } catch(e) {}
 }
 
@@ -428,6 +426,7 @@ const DOM = {
     weightIosToggle: document.getElementById('weightIosToggle'),
     weightInputRow: document.getElementById('weightInputRow'),
     calculateBtn: document.getElementById('calculateBtn'),
+    calculateBtnWrap: document.getElementById('calculateBtnWrap'),
     resultsSection: document.getElementById('resultsSection'),
     totalDrugAmount: document.getElementById('totalDrugAmount'),
     totalDrugUnit: document.getElementById('totalDrugUnit'),
@@ -496,11 +495,10 @@ function setupMobileLayout() {
         TextDirection.applyBidiFixes();
         setupMobileNumericKeyboard();
         // Sticky calculate button adjustment
-        const calcWrap = document.querySelector('.calculate-btn-sticky-wrap');
-        if (calcWrap) {
-            calcWrap.style.position = 'sticky';
-            calcWrap.style.bottom = '0';
-            calcWrap.style.marginTop = 'auto';
+        if (DOM.calculateBtnWrap) {
+            DOM.calculateBtnWrap.style.position = 'sticky';
+            DOM.calculateBtnWrap.style.bottom = '0';
+            DOM.calculateBtnWrap.style.marginTop = 'auto';
         }
     } else {
         resetDesktopLayout();
@@ -559,6 +557,7 @@ function ensureContentVisibility() {
 }
 
 function fixVolumeButtonColors() {
+    // Ensure active volume preset buttons have white text
     document.querySelectorAll('.volume-preset-btn.active').forEach(btn => {
         btn.style.setProperty('color', 'white', 'important');
         btn.querySelectorAll('.number, .unit-text, .custom-text, span').forEach(el => {
@@ -577,21 +576,19 @@ function fixMethodButtonTextColor() {
     document.querySelectorAll('.method-btn-compact').forEach(button => {
         if (button.classList.contains('active')) {
             button.style.color = 'white';
-            button.style.removeProperty('background');
             const icon = button.querySelector('i');
             const text = button.querySelector('span');
             if (icon) icon.style.color = 'white';
             if (text) text.style.color = 'white';
         } else {
             button.style.removeProperty('color');
-            button.style.removeProperty('background');
             const icon = button.querySelector('i');
             const text = button.querySelector('span');
             if (icon) icon.style.removeProperty('color');
             if (text) text.style.removeProperty('color');
         }
     });
-    fixVolumeButtonColors(); // also fix volume buttons
+    fixVolumeButtonColors();
 }
 
 function positionManualButtonInDrugGrid() {
@@ -717,7 +714,6 @@ function loadSettings() {
     const savedSettings = localStorage.getItem('appSettings');
     if (savedSettings) {
         const parsed = JSON.parse(savedSettings);
-        // Merge so new keys (like hapticFeedback) keep their defaults if absent
         AppState.settings = Object.assign({}, AppState.settings, parsed);
     }
     if (DOM.darkModeToggle) DOM.darkModeToggle.checked = AppState.settings.darkMode;
@@ -734,18 +730,31 @@ function saveSettings() {
 }
 
 function applySettings() {
+    // Dark mode
     if (AppState.settings.darkMode) {
         document.body.classList.add('dark-mode');
         AppState.theme = 'dark';
+        if (DOM.darkModeToggle) DOM.darkModeToggle.checked = true;
+        if (DOM.themeToggle) {
+            const icon = DOM.themeToggle.querySelector('i');
+            if (icon) icon.className = 'fas fa-sun';
+        }
     } else {
         document.body.classList.remove('dark-mode');
         AppState.theme = 'light';
+        if (DOM.darkModeToggle) DOM.darkModeToggle.checked = false;
+        if (DOM.themeToggle) {
+            const icon = DOM.themeToggle.querySelector('i');
+            if (icon) icon.className = 'fas fa-moon';
+        }
     }
+    // Large font
     if (AppState.settings.largeFont) document.body.classList.add('large-font');
     else document.body.classList.remove('large-font');
-    const icon = DOM.themeToggle?.querySelector('i');
-    if (icon) icon.className = AppState.theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-    // Force volume button colors after theme change
+    // Colour theme (must be applied after dark mode class is set)
+    const savedColor = AppState.settings.colorTheme || 'default';
+    applyTheme(savedColor);
+    // Fix button colors after theme change
     fixVolumeButtonColors();
 }
 
@@ -794,7 +803,7 @@ function selectDrug(drugId) {
 
     if (DOM.weightContainer && DOM.weightCheckbox && DOM.patientWeight) {
         if (drug.weightBased && drug.weightBased.active) {
-            DOM.weightContainer.style.display = 'flex';
+            DOM.weightContainer.style.display = 'block';
             // Reset toggle to off state when drug changes
             if (DOM.weightIosToggle) DOM.weightIosToggle.classList.remove('on');
             if (DOM.weightInputRow) DOM.weightInputRow.style.display = 'none';
@@ -861,15 +870,6 @@ function updateAmpouleTypeSelector(drug) {
         });
         container.appendChild(button);
     });
-    container.querySelectorAll('.ampoule-type-btn').forEach(btn => {
-        if (btn.classList.contains('active')) {
-            btn.style.color = 'white';
-            btn.style.removeProperty('background');
-        } else {
-            btn.style.removeProperty('color');
-            btn.style.removeProperty('background');
-        }
-    });
 }
 
 function updateAmpouleInfo() {
@@ -927,7 +927,7 @@ function updateVolumeOptions() {
         }
     });
     DOM.volumeOptions.appendChild(customBtn);
-    fixVolumeButtonColors(); // initial colors
+    fixVolumeButtonColors();
 }
 
 // ============================================
@@ -1071,7 +1071,6 @@ function clearResults() {
         if (valueEl) { valueEl.textContent = '0'; valueEl.style.color = ''; }
         if (unitEl) unitEl.innerHTML = '';
     }
-    // Restore original highlight card
     const origHighlight = document.querySelector('.result-item-enhanced:nth-child(3)');
     if (origHighlight && !origHighlight.classList.contains('highlight')) origHighlight.classList.add('highlight');
 }
@@ -1145,7 +1144,6 @@ function updateWeightBasedUnit(drug) {
 // EVENT LISTENERS
 // ============================================
 function setupEventListeners() {
-    // Header button press animations (touchstart for instant mobile response)
     function animateBtn(btn) {
         if (!btn) return;
         btn.classList.add('btn-press');
@@ -1186,16 +1184,13 @@ function setupEventListeners() {
         const maxAmpoules = Math.floor(1000 / drug.ampouleOptions[0].strength) || 20;
         if (AppState.ampouleCount < maxAmpoules) { AppState.ampouleCount++; updateAmpouleInfo(); clearResults(); }
     });
-    // Weight iOS toggle (the visible toggle — drives the hidden checkbox)
+    // Weight iOS toggle (the visible toggle)
     if (DOM.weightIosToggle) {
         DOM.weightIosToggle.addEventListener('click', () => {
             haptic(25);
             AppState.useWeight = !AppState.useWeight;
-            // Sync hidden checkbox
             if (DOM.weightCheckbox) DOM.weightCheckbox.checked = AppState.useWeight;
-            // Toggle knob visual
             DOM.weightIosToggle.classList.toggle('on', AppState.useWeight);
-            // Show/hide weight input row
             if (DOM.weightInputRow) {
                 DOM.weightInputRow.style.display = AppState.useWeight ? 'flex' : 'none';
             }
@@ -1276,9 +1271,9 @@ function setupEventListeners() {
     });
     if (DOM.librarySearch) DOM.librarySearch.addEventListener('input', function() {
         const term = this.value.toLowerCase();
-        document.querySelectorAll('.drug-library-card').forEach(card => {
-            const drugName = card.querySelector('.drug-library-title')?.textContent || '';
-            const englishName = card.querySelector('.drug-library-english')?.textContent || '';
+        document.querySelectorAll('.qref-accordion-item').forEach(card => {
+            const drugName = card.querySelector('.qref-name')?.textContent || '';
+            const englishName = card.querySelector('.qref-english')?.textContent || '';
             card.style.display = (drugName + ' ' + englishName).toLowerCase().includes(term) ? 'block' : 'none';
         });
     });
@@ -1319,11 +1314,28 @@ function setupEventListeners() {
 }
 
 function setupSettingsEventListeners() {
-    if (DOM.darkModeToggle) DOM.darkModeToggle.addEventListener('change', function() { AppState.settings.darkMode = this.checked; saveSettings(); applySettings(); });
-    if (DOM.largeFontToggle) DOM.largeFontToggle.addEventListener('change', function() { AppState.settings.largeFont = this.checked; saveSettings(); applySettings(); });
-    if (DOM.doseAlertToggle) DOM.doseAlertToggle.addEventListener('change', function() { AppState.settings.doseAlerts = this.checked; saveSettings(); });
-    if (DOM.compatAlertToggle) DOM.compatAlertToggle.addEventListener('change', function() { AppState.settings.compatAlerts = this.checked; saveSettings(); });
-    if (DOM.saveHistoryToggle) DOM.saveHistoryToggle.addEventListener('change', function() { AppState.settings.saveHistory = this.checked; saveSettings(); });
+    if (DOM.darkModeToggle) DOM.darkModeToggle.addEventListener('change', function() {
+        AppState.settings.darkMode = this.checked;
+        saveSettings();
+        applySettings();
+    });
+    if (DOM.largeFontToggle) DOM.largeFontToggle.addEventListener('change', function() {
+        AppState.settings.largeFont = this.checked;
+        saveSettings();
+        applySettings();
+    });
+    if (DOM.doseAlertToggle) DOM.doseAlertToggle.addEventListener('change', function() {
+        AppState.settings.doseAlerts = this.checked;
+        saveSettings();
+    });
+    if (DOM.compatAlertToggle) DOM.compatAlertToggle.addEventListener('change', function() {
+        AppState.settings.compatAlerts = this.checked;
+        saveSettings();
+    });
+    if (DOM.saveHistoryToggle) DOM.saveHistoryToggle.addEventListener('change', function() {
+        AppState.settings.saveHistory = this.checked;
+        saveSettings();
+    });
     if (DOM.clearHistoryBtn) DOM.clearHistoryBtn.addEventListener('click', function() {
         if (confirm('آیا از پاک کردن تاریخچه اطمینان دارید؟')) {
             localStorage.removeItem('calculationHistory');
@@ -1371,9 +1383,11 @@ function openManualCalculation() {
     const calculatorControls = DOM.calculatorControls;
     const selectedDrugHeader = document.querySelector('.selected-drug-compact');
     const drugSidebar = document.querySelector('.drug-sidebar');
+    const calcBtnWrap = DOM.calculateBtnWrap;
 
     if (manualSection && calculatorControls) {
         if (calculatorControls) calculatorControls.style.display = 'none';
+        if (calcBtnWrap) calcBtnWrap.style.display = 'none';
         if (selectedDrugHeader) selectedDrugHeader.style.display = 'none';
         manualSection.style.display = 'flex';
         manualSection.style.flexDirection = 'column';
@@ -1522,7 +1536,9 @@ function setupManualCalculationFunctionality() {
     document.getElementById('closeManualBtn').addEventListener('click', () => {
         document.getElementById('manualSection').style.display = 'none';
         document.getElementById('calculatorControls').style.display = 'grid';
-        document.querySelector('.selected-drug-compact').style.display = 'flex';
+        if (DOM.calculateBtnWrap) DOM.calculateBtnWrap.style.display = 'block';
+        const selectedDrugHeader = document.querySelector('.selected-drug-compact');
+        if (selectedDrugHeader) selectedDrugHeader.style.display = 'flex';
         const drugSidebar = document.querySelector('.drug-sidebar');
         if (drugSidebar && window.innerWidth < 768) drugSidebar.removeAttribute('style');
     });
@@ -1609,15 +1625,16 @@ function toggleTheme() {
     AppState.theme = AppState.theme === 'light' ? 'dark' : 'light';
     document.body.classList.toggle('dark-mode', AppState.theme === 'dark');
     AppState.settings.darkMode = AppState.theme === 'dark';
-    if (DOM.darkModeToggle) DOM.darkModeToggle.checked = AppState.settings.darkMode;
     saveSettings();
-    // Update theme-color meta so PWA chrome matches app surface
+    // Update theme-color meta
     const meta = document.getElementById('themeColorMeta');
     if (meta) meta.content = AppState.theme === 'dark' ? '#1f2937' : '#ffffff';
     // Re-apply colour theme for new light/dark context
     applyTheme(AppState.settings.colorTheme || 'default');
     const icon = DOM.themeToggle.querySelector('i');
     if (icon) icon.className = AppState.theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    // Sync settings checkbox
+    if (DOM.darkModeToggle) DOM.darkModeToggle.checked = AppState.theme === 'dark';
     localStorage.setItem('theme', AppState.theme);
     fixVolumeButtonColors();
 }
@@ -1628,8 +1645,8 @@ function loadTheme() {
     document.body.classList.toggle('dark-mode', AppState.theme === 'dark');
     const icon = DOM.themeToggle?.querySelector('i');
     if (icon) icon.className = AppState.theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    if (DOM.darkModeToggle) DOM.darkModeToggle.checked = AppState.theme === 'dark';
     fixVolumeButtonColors();
-    // Apply colour theme AFTER dark mode class is set so correct palette is used
     const savedColor = AppState.settings.colorTheme || 'default';
     if (savedColor !== 'default') applyTheme(savedColor);
 }
@@ -1638,17 +1655,14 @@ function loadTheme() {
 // CONVERTERS — bidirectional live
 // ============================================
 function initializeConverters() {
-    // Set sensible defaults
     const defaults = { percentageValue:'5', percentageVolume:'100', dripVolume:'500', dripTime:'8', tempC:'37', weightKg:'70' };
     Object.entries(defaults).forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val; });
-    // Trigger initial calculations for live converters
     convertPercentageLive();
     calculateDripRateLive();
     convertTempLive('c');
     convertWeightLive('kg');
 }
 
-// Electrolyte valences for mEq↔mg
 const ELECTROLYTE_DATA = {
     sodium:             { mw: 23,  valence: 1 },
     potassium:          { mw: 39,  valence: 1 },
@@ -1664,7 +1678,6 @@ function convertElectrolyteLive(source) {
     const meqEl = document.getElementById('electrolyteMeq');
     const mgEl  = document.getElementById('electrolyteMg');
     const resEl = document.getElementById('electrolyteResult');
-    // mEq = mg / (mw / valence)  →  mg = mEq × (mw / valence)
     const eqWeight = data.mw / data.valence;
     if (source === 'meq') {
         const meq = parseFloat(meqEl.value);
@@ -1691,7 +1704,6 @@ function convertUnitsLive(source) {
     const fromEl  = document.getElementById('unitFromVal');
     const toEl    = document.getElementById('unitToVal');
     const resEl   = document.getElementById('unitResult');
-    // All in mcg base
     const toMcg = { mcg: 1, mg: 1000, g: 1000000 };
     const fromUnit = fromSel.value, toUnit = toSel.value;
     if (source === 'from') {
@@ -1800,14 +1812,12 @@ function convertWeightLive(source) {
     }
 }
 
-// Helper: render a styled result row list
 function renderConverterResult(rows) {
     return '<div class="conv-result-list">' + rows.map(r =>
         '<div class="conv-result-row"><span class="conv-result-label">' + r.label + '</span><strong class="conv-result-value">' + r.value + '</strong></div>'
     ).join('') + '</div>';
 }
 
-// Legacy stubs so old onclick handlers don't throw
 function convertElectrolyte() { convertElectrolyteLive('meq'); }
 function convertPercentage() { convertPercentageLive(); }
 function convertUnits() { convertUnitsLive('from'); }
@@ -1819,7 +1829,6 @@ function calculateDripRate() { calculateDripRateLive(); }
 function initializeTools() {
     const defaults = { bmiWeight:'70', bmiHeight:'170', bsaWeight:'70', bsaHeight:'170', ibwHeight:'170', crclAge:'40', crclWeight:'70', crclValue:'1.0' };
     Object.entries(defaults).forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val; });
-    // Populate drug dropdowns (compat + dose calc picker)
     ['compatDrug1','compatDrug2','doseCalcDrugPicker'].forEach(selId => {
         const sel = document.getElementById(selId);
         if (!sel || sel.options.length > 1) return;
@@ -1925,13 +1934,11 @@ function checkCompatibility() {
     const d1 = drugDatabase[drug1Id], d2 = drugDatabase[drug2Id];
     if (!d1 || !d2) { resultDiv.textContent = 'اطلاعات دارو یافت نشد'; resultDiv.style.display = 'block'; return; }
 
-    // Solution compatibility
     const solMap = { NS: 'N.S', D5W: 'D5W', DS: 'D/S', RL: 'RL' };
     const solKey = solMap[solution] || solution;
     const d1SolOk = d1.solutionType.some(s => s.replace(/[\s.\/]/g,'').toLowerCase() === solKey.replace(/[\s.\/]/g,'').toLowerCase() || d1.solutionType.includes(solution));
     const d2SolOk = d2.solutionType.some(s => s.replace(/[\s.\/]/g,'').toLowerCase() === solKey.replace(/[\s.\/]/g,'').toLowerCase() || d2.solutionType.includes(solution));
 
-    // Y-site compatibility: check d1's list mentions d2's English name, and vice versa
     const d2EnglishLower = d2.englishName.toLowerCase();
     const d1EnglishLower = d1.englishName.toLowerCase();
     const d1Compatibles = (d1.ySiteCompatibilities?.compatible || []).map(s => s.toLowerCase());
@@ -1991,7 +1998,6 @@ function calculateDose() {
     if (concentration === 0) { resultDiv.innerHTML = 'غلظت نمی‌تواند صفر باشد'; resultDiv.style.display = 'block'; return; }
     const volumeNeeded = needed / concentration;
     const vialsNeeded = Math.ceil(volumeNeeded / vialVolume);
-    // Syringe size guidance
     const syringes = [1, 2, 3, 5, 10, 20, 50];
     const bestSyringe = syringes.find(s => s >= volumeNeeded) || 50;
     const vialText = vialsNeeded > 1 ? ` — ${vialsNeeded} ویال` : ' — ۱ ویال';
@@ -2032,15 +2038,18 @@ function loadDrugLibrary() {
     if (container.children.length > 0) { wireDrugLibrarySearch(); return; }
 
     Object.values(drugDatabase).forEach(drug => {
-        const doseRange = drug.typicalDoseRange
-            ? drug.typicalDoseRange.min + '–' + drug.typicalDoseRange.max + ' ' + drug.typicalDoseRange.unit
-            : '--';
+        // Format dose range with proper LTR isolation for numbers
+        let doseRangeDisplay = '--';
+        if (drug.typicalDoseRange) {
+            const minFormatted = PersianNumbers.formatNumber(drug.typicalDoseRange.min, 1);
+            const maxFormatted = PersianNumbers.formatNumber(drug.typicalDoseRange.max, 1);
+            doseRangeDisplay = `<span class="latin-inline" style="direction:ltr;unicode-bidi:isolate;">${minFormatted}–${maxFormatted} ${drug.typicalDoseRange.unit}</span>`;
+        }
         const maxConc = drug.maxSafeConcentration || '--';
         const solutions = drug.solutionType.join(' / ');
         const compatible = (drug.ySiteCompatibilities?.compatible || []).slice(0, 5);
         const incompatible = (drug.ySiteCompatibilities?.incompatible || []).slice(0, 5);
 
-        // Build ampoule options list
         const ampoulesHTML = drug.ampouleOptions.map(a =>
             '<div class="qref-ampoule-item"><i class="fas fa-vial"></i><span>' + a.label + '</span></div>'
         ).join('');
@@ -2068,7 +2077,7 @@ function loadDrugLibrary() {
             '</div>' +
             '<div class="accordion-body qref-acc-body" id="drug-body-' + drug.id + '">' +
                 '<div class="qref-info-grid">' +
-                    '<div class="qref-info-row"><span class="qref-info-label"><i class="fas fa-pills"></i> دوز معمول</span><span class="qref-info-val">' + doseRange + '</span></div>' +
+                    '<div class="qref-info-row"><span class="qref-info-label"><i class="fas fa-pills"></i> دوز معمول</span><span class="qref-info-val">' + doseRangeDisplay + '</span></div>' +
                     '<div class="qref-info-row"><span class="qref-info-label"><i class="fas fa-flask"></i> حداکثر غلظت</span><span class="qref-info-val">' + maxConc + '</span></div>' +
                     '<div class="qref-info-row"><span class="qref-info-label"><i class="fas fa-droplet"></i> محلول‌های سازگار</span><span class="qref-info-val">' + solutions + '</span></div>' +
                 '</div>' +
@@ -2114,11 +2123,9 @@ function wireDrugLibrarySearch() {
         });
     });
 
-    // Event delegation for drug row taps
     if (!container.dataset.delegated) {
         container.dataset.delegated = 'true';
         container.addEventListener('click', (e) => {
-            // Calc button — handled by its own onclick
             if (e.target.closest('.qref-calc-btn')) return;
             const row = e.target.closest('.qref-row');
             if (row && row.dataset.bodyId) {
@@ -2241,7 +2248,6 @@ function updateDoseRangeIndicator() {
     }
     const { min, max, unit } = drug.typicalDoseRange;
     let status, color, text;
-    const pct = (val - min) / (max - min);
     if (val < min * 0.8) {
         status = 'low'; color = '#60a5fa';
         text = `پایین‌تر از محدوده معمول (${min}–${max} ${unit})`;
@@ -2277,10 +2283,7 @@ function calculateReverse() {
     DOM.doctorOrder.style.borderColor = '';
     const totalDrug = AppState.ampouleCount * ampoule.strength;
     const concentration = totalDrug / AppState.solutionVolume;
-    // Calculate derived dose from pump rate
-    // concentration is in drug-unit/cc, pumpRate is cc/hour → dose/hour
     let derivedDose = pumpRateVal * concentration;
-    // For mcg-based drugs the DB stores in mcg already; if weight-based divide by weight for mcg/kg/min
     const unit = AppState.useWeight && drug.weightBased?.active ? drug.weightBased.unit : (drug.weightBased?.nonWeightUnit || drug.standardUnit);
     const isPerMin = unit && unit.toLowerCase().includes('min');
     if (isPerMin) derivedDose = derivedDose / 60;
@@ -2288,7 +2291,6 @@ function calculateReverse() {
     const weight = AppState.useWeight ? (parseFloat(DOM.patientWeight?.dataset.numericValue) || 1) : 1;
     if (isPerKg && AppState.useWeight) derivedDose = derivedDose / weight;
     const duration = AppState.solutionVolume / pumpRateVal;
-    // Display: swap highlight card to show derived dose, not pump rate
     displayResultsReverse(totalDrug, concentration, pumpRateVal, derivedDose, duration, ampoule.unit, unit);
     generateStepByStepGuide(drug, totalDrug, concentration, pumpRateVal, derivedDose);
     displayWarnings(drug);
@@ -2298,10 +2300,8 @@ function calculateReverse() {
 
 function displayResultsReverse(totalDrug, concentration, pumpRate, derivedDose, duration, ampUnit, doseUnit) {
     const drug = drugDatabase[AppState.selectedDrug];
-    // Total drug
     DOM.totalDrugAmount.textContent = PersianNumbers.formatNumber(totalDrug, 0);
     DOM.totalDrugUnit.innerHTML = `<span class="latin-inline">${ampUnit}</span>`;
-    // Concentration
     let concentrationDisplay, concentrationUnitDisplay;
     if (drug.id === 'norepinephrine' || drug.id === 'dopamine' || drug.id === 'fentanyl' || drug.id === 'tng') {
         concentrationDisplay = PersianNumbers.formatNumber(concentration * 1000, 2);
@@ -2312,19 +2312,15 @@ function displayResultsReverse(totalDrug, concentration, pumpRate, derivedDose, 
     }
     DOM.concentrationResult.textContent = concentrationDisplay;
     DOM.concentrationUnit.innerHTML = `<span class="latin-inline">${concentrationUnitDisplay}</span>`;
-    // Pump rate (not highlighted in reverse mode)
     DOM.pumpRateResult.textContent = PersianNumbers.formatNumber(pumpRate, 2);
     DOM.pumpRateUnit.innerHTML = `<span class="latin-inline">cc/hour</span>`;
-    // Duration
     DOM.durationResult.textContent = PersianNumbers.formatNumber(duration, 1);
     DOM.durationUnit.innerHTML = `<span class="persian-inline">ساعت</span>`;
-    // Rearrange highlight: move it to derived dose
     const highlightEl = document.querySelector('.result-item-enhanced.highlight');
     const pumpRateCard = document.getElementById('pumpRateResult')?.closest('.result-item-enhanced');
     if (highlightEl && pumpRateCard) {
         highlightEl.classList.remove('highlight');
     }
-    // Use pump rate card slot to show derived dose (swap content)
     if (pumpRateCard) {
         pumpRateCard.classList.add('highlight');
         const labelEl = pumpRateCard.querySelector('.result-label-enhanced');
@@ -2345,19 +2341,15 @@ function displayResultsReverse(totalDrug, concentration, pumpRate, derivedDose, 
 // RESTORE FROM HISTORY
 // ============================================
 function restoreFromHistory(item) {
-    // Switch to drug if it exists
     if (drugDatabase[item.drug]) {
         selectDrug(item.drug);
-        // close modal
         if (DOM.historyModal) { DOM.historyModal.classList.remove('active'); document.body.classList.remove('no-scroll'); }
-        // Fill dose
         setTimeout(() => {
             if (DOM.doctorOrder) {
                 DOM.doctorOrder.value = item.dose;
                 DOM.doctorOrder.dataset.numericValue = item.dose;
                 updateDoseRangeIndicator();
             }
-            // Fill weight if applicable
             if (item.weight && DOM.patientWeight && DOM.weightCheckbox) {
                 DOM.weightCheckbox.checked = true;
                 AppState.useWeight = true;
@@ -2412,9 +2404,6 @@ function exportHistory() {
 // DRIP RATE CALCULATION
 // ============================================
 function getDripFactor(volumeCC) {
-    // Microset (60 gtt/mL): syringe pumps, ≤100cc — fine drops for precise small volumes
-    // Macroset (20 gtt/mL): serum bottles, ≥250cc — standard IV gravity sets
-    // 100cc is the boundary: a 100cc bag can go either way but microset is standard in ICU
     if (volumeCC <= 100) return { factor: 60, label: 'میکروست — ۶۰ قطره/mL' };
     return { factor: 20, label: 'ماکروست — ۲۰ قطره/mL' };
 }
@@ -2422,7 +2411,6 @@ function getDripFactor(volumeCC) {
 function displayDripRate(pumpRate, volumeCC) {
     if (!DOM.dripRateRow || !DOM.dripRateResult || !DOM.dripRateLabel) return;
     const { factor, label } = getDripFactor(volumeCC);
-    // Formula: drops/min = (cc/hour × drip_factor) / 60
     const dropsPerMin = (pumpRate * factor) / 60;
     DOM.dripRateResult.textContent = PersianNumbers.formatNumber(dropsPerMin, 1);
     DOM.dripRateLabel.textContent = 'سرعت قطره (' + label + ')';
@@ -2431,15 +2419,12 @@ function displayDripRate(pumpRate, volumeCC) {
 
 // ============================================
 // TAB BAR HEIGHT MEASUREMENT
-// Measures the actual rendered tab bar height (including safe area)
-// and sets it as --tab-bar-height so main-content never overlaps or gaps.
 // ============================================
 function measureTabBarHeight() {
     const tabBar = document.querySelector('.tab-bar');
     if (!tabBar) return;
     const rect = tabBar.getBoundingClientRect();
     const height = rect.height;
-    // Only set if we got a real value
     if (height > 20) {
         document.documentElement.style.setProperty('--tab-bar-height', height + 'px');
         return true;
@@ -2448,7 +2433,6 @@ function measureTabBarHeight() {
 }
 
 function setupTabBarMeasurement() {
-    // Try immediately, then keep retrying until we get a real value
     if (!measureTabBarHeight()) {
         const delays = [50, 150, 300, 600, 1000];
         delays.forEach(d => setTimeout(measureTabBarHeight, d));
@@ -2458,7 +2442,6 @@ function setupTabBarMeasurement() {
         setTimeout(measureTabBarHeight, 100);
         setTimeout(measureTabBarHeight, 400);
     });
-    // Also re-measure after page visibility change (returning from background on iOS)
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) setTimeout(measureTabBarHeight, 200);
     });
@@ -2523,7 +2506,7 @@ function setupOnboarding() {
         setTimeout(() => {
             overlay.style.display = 'flex';
             requestAnimationFrame(() => overlay.classList.add('visible'));
-        }, 1200); // show after loading screen clears
+        }, 1200);
     }
 
     function close(dontShow) {
@@ -2534,10 +2517,8 @@ function setupOnboarding() {
 
     if (doneBtn) doneBtn.addEventListener('click', () => { haptic(30); close(true); });
     if (skipBtn) skipBtn.addEventListener('click', () => close(true));
-    // backdrop tap
     overlay.querySelector('.onboarding-backdrop')?.addEventListener('click', () => close(false));
 }
-
 
 // ============================================
 // UPDATE AVAILABLE BANNER
@@ -2579,18 +2560,22 @@ function showUpdateBanner() {
 function setupUpdateDetection() {
     if (!('serviceWorker' in navigator)) return;
 
+    // Flag to prevent double reload on first install
+    let firstInstall = localStorage.getItem('sw_first_install') === null;
+    if (firstInstall) {
+        localStorage.setItem('sw_first_install', 'true');
+    }
+
     navigator.serviceWorker.ready.then(reg => {
-        // Check if there's already a waiting worker
-        if (reg.waiting) {
+        if (reg.waiting && !firstInstall) {
             _pendingWorker = reg.waiting;
             showUpdateBanner();
         }
-        // Listen for new worker installing
         reg.addEventListener('updatefound', () => {
             const newWorker = reg.installing;
             if (!newWorker) return;
             newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller && !firstInstall) {
                     _pendingWorker = newWorker;
                     showUpdateBanner();
                 }
@@ -2598,11 +2583,14 @@ function setupUpdateDetection() {
         });
     });
 
-    // When the new SW takes control, reload cleanly
-    let __swReloaded=false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if(__swReloaded) return; __swReloaded=true;
-        setTimeout(() => window.location.reload(), 300);
+        // Only reload if not first install to avoid double refresh
+        if (localStorage.getItem('sw_first_install') === 'true') {
+            localStorage.setItem('sw_first_install', 'false');
+            // Don't reload on first install
+        } else {
+            setTimeout(() => window.location.reload(), 300);
+        }
     });
 }
 
@@ -2627,7 +2615,6 @@ const THEMES = {
         }
     },
     fox: {
-        // Warm amber-orange inspired by fox fur — deep rust gradient
         light: {
             '--primary':          '#ea580c',
             '--primary-dark':     '#c2410c',
@@ -2644,7 +2631,6 @@ const THEMES = {
         }
     },
     ocean: {
-        // Deep teal-cyan — calm and clinical
         light: {
             '--primary':          '#0284c7',
             '--primary-dark':     '#0369a1',
@@ -2661,7 +2647,6 @@ const THEMES = {
         }
     },
     rose: {
-        // Rose-pink — warm and approachable
         light: {
             '--primary':          '#e11d48',
             '--primary-dark':     '#be123c',
@@ -2678,7 +2663,6 @@ const THEMES = {
         }
     },
     forest: {
-        // Emerald green — fresh and natural
         light: {
             '--primary':          '#16a34a',
             '--primary-dark':     '#15803d',
@@ -2701,18 +2685,14 @@ function applyTheme(themeName) {
     const palette = THEMES[themeName] || THEMES.default;
     const vars = isDark ? palette.dark : palette.light;
     const root = document.documentElement;
-    // Clear any previously set theme vars first
     const allVars = ['--primary','--primary-dark','--primary-light','--gradient-primary','--secondary'];
     if (themeName === 'default') {
-        // Remove overrides so CSS file defaults take over
         allVars.forEach(k => root.style.removeProperty(k));
     } else {
         Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v));
     }
-    // Update theme-color meta
     const meta = document.getElementById('themeColorMeta');
-    if (meta) meta.content = vars['--primary'] || (isDark ? '#1f2937' : '#ffffff');
-    // Mark active swatch
+    if (meta) meta.content = isDark ? '#1f2937' : '#ffffff';
     document.querySelectorAll('.theme-swatch').forEach(s => {
         s.classList.toggle('active', s.dataset.theme === themeName);
     });
@@ -2727,7 +2707,6 @@ function setupThemePicker() {
             applyTheme(btn.dataset.theme);
         });
     });
-    // Always apply the saved theme (including default) so dark mode variables are correct
     const saved = AppState.settings.colorTheme || 'default';
     applyTheme(saved);
 }
@@ -2741,7 +2720,6 @@ function toggleAccordion(headerBtn) {
     const chevron = headerBtn.querySelector('.accordion-chevron');
     const isOpen = item.classList.contains('open');
 
-    // Close all others
     document.querySelectorAll('.accordion-item.open').forEach(openItem => {
         if (openItem !== item) {
             openItem.classList.remove('open');
@@ -2763,7 +2741,6 @@ function toggleAccordion(headerBtn) {
     }
 }
 
-// Re-expand accordion body height after content changes (e.g. result appears)
 function refreshAccordion(el) {
     const body = el.closest('.accordion-body');
     if (body && body.closest('.accordion-item.open')) {
@@ -2771,7 +2748,6 @@ function refreshAccordion(el) {
     }
 }
 
-// Toggle accordion by body element id (for drug library rows)
 function toggleAccordionById(bodyId) {
     const body = document.getElementById(bodyId);
     if (!body) return;
@@ -2779,7 +2755,6 @@ function toggleAccordionById(bodyId) {
     if (!item) return;
     const chevronIcon = item.querySelector('.qref-chevron i');
     const isOpen = item.classList.contains('open');
-    // Close all other drug items
     document.querySelectorAll('.qref-accordion-item.open').forEach(openItem => {
         if (openItem !== item) {
             openItem.classList.remove('open');
@@ -2813,11 +2788,9 @@ function setupGCS() {
             haptic(25);
             const domain = btn.dataset.domain;
             const score = parseInt(btn.dataset.score);
-            // Deselect others in same group
             btn.closest('.gcs-btn-group').querySelectorAll('.gcs-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             GCS_STATE[domain] = score;
-            // Update inline score display
             const scoreMap = { eye: 'eScore', verbal: 'vScore', motor: 'mScore' };
             const scoreEl = document.getElementById(scoreMap[domain]);
             if (scoreEl) scoreEl.textContent = score;
@@ -2909,8 +2882,6 @@ function resetGCS() {
 // BURNS / TBSA CALCULATOR
 // ============================================
 
-// Rule of Nines — adult percentages per region
-// Each region maps to its TBSA %
 const BURNS_ADULT = {
     head: 4.5, head_b: 4.5,
     neck: 1,
@@ -2930,7 +2901,6 @@ const BURNS_ADULT = {
     l_foot: 1.75, r_foot: 1.75
 };
 
-// Lund-Browder — pediatric (approximate for ~1yr; head larger, legs smaller)
 const BURNS_PEDIATRIC = {
     head: 9.5, head_b: 9.5,
     neck: 1,
@@ -2959,7 +2929,6 @@ function setupBurns() {
             const key = region.dataset.region;
             if (BURNS_STATE.selected.has(key)) {
                 BURNS_STATE.selected.delete(key);
-                // Deselect paired SVG elements (front/back have same region ids on different svgs)
                 document.querySelectorAll(`[data-region="${key}"]`).forEach(el => el.classList.remove('selected'));
             } else {
                 BURNS_STATE.selected.add(key);
@@ -2986,7 +2955,6 @@ function updateBurns() {
     const table = BURNS_STATE.ageMode === 'adult' ? BURNS_ADULT : BURNS_PEDIATRIC;
     let total = 0;
     BURNS_STATE.selected.forEach(key => { total += (table[key] || 0); });
-    // Cap at 100
     total = Math.min(total, 100);
 
     const tbsaEl = document.getElementById('burnsTBSA');
@@ -2994,7 +2962,6 @@ function updateBurns() {
     const chipsEl = document.getElementById('burnsChips');
     const notesEl = document.getElementById('burnsNotes');
 
-    // Update chips
     if (chipsEl) {
         if (BURNS_STATE.selected.size === 0) {
             chipsEl.innerHTML = '<span class="burns-chips-placeholder">هیچ ناحیه‌ای انتخاب نشده</span>';
@@ -3016,7 +2983,6 @@ function updateBurns() {
 
     if (tbsaEl) tbsaEl.textContent = total.toFixed(1) + '%';
 
-    // Clinical notes based on severity
     let notes = [];
     if (total < 10) {
         notes = ['سوختگی محدود — مراقبت سرپایی ممکن است کافی باشد', 'درصورت درگیری صورت، دست یا پرینه: ارجاع به مرکز سوختگی'];
@@ -3037,7 +3003,6 @@ function updateBurns() {
         refreshAccordion(resultBox);
     }
 
-    // Parkland if weight is available
     updateParkland();
 }
 
@@ -3058,7 +3023,6 @@ function updateParkland() {
         return;
     }
 
-    // Parkland formula: 4 × weight(kg) × TBSA(%)
     const totalFluid = 4 * weight * total;
     const first8h = totalFluid / 2;
     const next16h = totalFluid / 2;
@@ -3114,5 +3078,3 @@ window.resetBurns = resetBurns;
 window.updateParkland = updateParkland;
 window.restoreFromHistory = restoreFromHistory;
 window.updateDoseRangeIndicator = updateDoseRangeIndicator;
-
- document.addEventListener('click',e=>{const m=document.getElementById('manualCalculationModal');const w=document.getElementById('calculateBtnWrap');if(m&&w){setTimeout(()=>{w.style.display=m.classList.contains('active')?'none':'';},0);}});
