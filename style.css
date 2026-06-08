@@ -7671,3 +7671,27 @@ html {
     min-height: 48px;
     font-size: 0.9em !important;
 }
+/* Greeting banner visibility */
+.greeting-banner {
+    display: none;
+}
+.greeting-banner.banner-visible {
+    display: flex;
+}
+
+/* Save button active state */
+.username-save-btn {
+    transition: all 0.2s ease;
+}
+.username-save-btn:not(.active) {
+    background: var(--surface-elevated);
+    color: var(--text-tertiary);
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+.username-save-btn.active {
+    background: var(--gradient-primary);
+    color: white;
+    cursor: pointer;
+}
