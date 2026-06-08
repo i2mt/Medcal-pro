@@ -7197,3 +7197,25 @@ html {
     z-index: 10;
     border-top: 1px solid var(--border);
 }
+@media (min-width: 769px) {
+    .main-content {
+        margin-top: 60px;
+        height: calc(100vh - 60px - 56px);
+        padding-bottom: 0;
+    }
+    .calculator-layout {
+        height: 100%;
+        display: flex;
+        flex-direction: row;
+        overflow: hidden;
+    }
+    .drug-sidebar {
+        height: 100%;
+        overflow-y: auto;
+    }
+    .calculator-main {
+        flex: 1;
+        overflow-y: auto;
+        height: 100%;
+    }
+}
