@@ -22,7 +22,7 @@ const AppState = {
         compatAlerts: true,
         saveHistory: true,
         hapticFeedback: true,
-        colorTheme: 'default'
+        colorTheme: 'fox'
     },
     reverseMode: false
 };
@@ -2046,12 +2046,13 @@ function loadDrugLibrary() {
 
     Object.values(drugDatabase).forEach(drug => {
         // Format dose range with proper LTR isolation for numbers
-        let doseRangeDisplay = '--';
-        if (drug.typicalDoseRange) {
-            const minFormatted = PersianNumbers.formatNumber(drug.typicalDoseRange.min, 1);
-            const maxFormatted = PersianNumbers.formatNumber(drug.typicalDoseRange.max, 1);
-            doseRangeDisplay = `<span dir="ltr" style="display:inline-block; unicode-bidi:isolate;">${minFormatted}–${maxFormatted} ${drug.typicalDoseRange.unit}</span>`;
-        }
+        // Inside loadDrugLibrary, replace the doseRangeDisplay block with:
+let doseRangeDisplay = '--';
+if (drug.typicalDoseRange) {
+    const minFormatted = PersianNumbers.formatNumber(drug.typicalDoseRange.min, 1);
+    const maxFormatted = PersianNumbers.formatNumber(drug.typicalDoseRange.max, 1);
+    doseRangeDisplay = `<span dir="ltr" style="display:inline-block; unicode-bidi:isolate;">${minFormatted}–${maxFormatted} ${drug.typicalDoseRange.unit}</span>`;
+}
         const maxConc = drug.maxSafeConcentration || '--';
         const solutions = drug.solutionType.join(' / ');
         const compatible = (drug.ySiteCompatibilities?.compatible || []).slice(0, 5);
