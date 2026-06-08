@@ -2049,9 +2049,10 @@ function loadDrugLibrary() {
         // Inside loadDrugLibrary, replace the doseRangeDisplay block with:
 let doseRangeDisplay = '--';
 if (drug.typicalDoseRange) {
-    const minFormatted = PersianNumbers.formatNumber(drug.typicalDoseRange.min, 1);
-    const maxFormatted = PersianNumbers.formatNumber(drug.typicalDoseRange.max, 1);
-    doseRangeDisplay = '<span dir="ltr" style="display:inline-block; unicode-bidi:isolate;">' + minFormatted + '–' + maxFormatted + ' ' + drug.typicalDoseRange.unit + '</span>';
+    const minFormatted = drug.typicalDoseRange.min.toFixed(1);
+    const maxFormatted = drug.typicalDoseRange.max.toFixed(1);
+    // Force LTR and use Latin numbers
+    doseRangeDisplay = `<span dir="ltr" style="display:inline-block; unicode-bidi:isolate; font-family: monospace;">${minFormatted}–${maxFormatted} ${drug.typicalDoseRange.unit}</span>`;
 }
         const maxConc = drug.maxSafeConcentration || '--';
         const solutions = drug.solutionType.join(' / ');
