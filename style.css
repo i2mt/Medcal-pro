@@ -7417,3 +7417,175 @@ html {
     color: var(--text-primary);
     border-color: #4a5568;
 }
+
+/* ============================================
+   SETTINGS FIXES & NEW COMPONENTS
+   ============================================ */
+
+/* Fix modal scroll — content must not clip the body */
+.modal-content {
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.modal-body {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+}
+
+/* Setting row that stacks label above control */
+.setting-item--block {
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: 8px;
+    padding: 10px 0 !important;
+}
+
+.setting-label-full {
+    font-size: 13px;
+    color: var(--text-primary);
+    width: 100%;
+    text-align: right;
+}
+
+/* Sub-label below setting span */
+.setting-label-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.setting-sublabel {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-family: var(--font-persian);
+}
+
+/* ---- Theme mode 3-button row ---- */
+.theme-mode-btns {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+    direction: rtl;
+}
+
+.theme-mode-btn {
+    flex: 1;
+    padding: 8px 4px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    font-family: var(--font-persian);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: var(--transition);
+}
+
+.theme-mode-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-light);
+}
+
+.theme-mode-btn.active {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    color: white;
+    box-shadow: 0 3px 10px rgba(129, 140, 248, 0.3);
+}
+
+.dark-mode .theme-mode-btn {
+    background: var(--surface-elevated);
+    border-color: #4a5568;
+    color: var(--text-secondary);
+}
+
+.dark-mode .theme-mode-btn.active {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    color: white;
+}
+
+/* ---- Username field (always visible) ---- */
+.username-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 6px 0 2px;
+    direction: rtl;
+}
+
+.username-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: var(--font-persian);
+    font-weight: 600;
+}
+
+.username-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.username-input {
+    flex: 1;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-persian);
+    font-size: 13px;
+    direction: rtl;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.username-input:focus {
+    border-color: var(--primary);
+}
+
+.username-save-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: none;
+    background: var(--gradient-primary);
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: opacity 0.2s;
+}
+
+.username-save-btn:hover { opacity: 0.85; }
+
+.username-hint {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-family: var(--font-persian);
+    transition: color 0.2s;
+}
+
+.username-hint.hint-saved {
+    color: #22c55e;
+    font-weight: 600;
+}
+
+.dark-mode .username-input {
+    background: var(--surface-elevated);
+    border-color: #4a5568;
+}
