@@ -4293,3 +4293,330 @@ input[type="search"]::placeholder {
 }
 
 /* Rest of the file remains unchanged from your original – I've omitted the very long repeated sections for brevity, but the above is the full corrected file with all fixes integrated. */
+/* ============================================
+   FIX: ACTIVE VOLUME BUTTONS GRADIENT BACKGROUND
+   ============================================ */
+.volume-preset-btn.active {
+    background: var(--gradient-primary) !important;
+    border-color: transparent !important;
+    color: white !important;
+}
+.volume-preset-btn.active .number,
+.volume-preset-btn.active .unit-text,
+.volume-preset-btn.active .custom-text,
+.volume-preset-btn.active span {
+    color: white !important;
+}
+
+/* Ensure method buttons keep their gradient when active */
+.method-btn-compact.active {
+    background: var(--gradient-primary) !important;
+    border-color: transparent !important;
+    color: white !important;
+}
+
+/* ============================================
+   FIX: TOGGLE ROWS (Weight & Reverse)
+   ============================================ */
+.calc-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px;
+    direction: rtl;
+    gap: 12px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.calc-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-persian);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    flex: 1;
+    pointer-events: none;
+    direction: rtl;
+}
+
+.calc-toggle-label i {
+    color: var(--primary);
+    font-size: 13px;
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* iOS toggle base */
+.ios-toggle {
+    width: 44px;
+    height: 26px;
+    border-radius: 13px;
+    background: #cbd5e1;
+    border: 1.5px solid #94a3b8;
+    flex-shrink: 0;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.28s ease, border-color 0.28s ease;
+    display: inline-block;
+}
+
+.ios-knob {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    transition: transform 0.28s cubic-bezier(0.34,1.4,0.64,1);
+}
+
+.ios-toggle.on {
+    background: var(--primary);
+    border-color: var(--primary-dark);
+}
+
+.ios-toggle.on .ios-knob {
+    transform: translateX(-18px);
+}
+
+/* Dark mode toggles */
+.dark-mode .ios-toggle {
+    background: #4b5563 !important;
+    border-color: #6b7280 !important;
+}
+.dark-mode .ios-toggle.on {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+
+/* Weight input row */
+.weight-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px 10px;
+    border-top: 1px solid var(--border-light);
+    background: var(--surface-elevated);
+    direction: rtl;
+}
+
+.weight-input-row i {
+    color: var(--text-tertiary);
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.weight-input-row input {
+    flex: 1;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 15px;
+    font-family: var(--font-mono);
+    background: var(--surface);
+    color: var(--text-primary);
+    text-align: center;
+    min-width: 0;
+}
+
+.weight-input-row .weight-unit {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+}
+
+/* ============================================
+   FIX: TOOLS TAB ACCORDION BOXES
+   ============================================ */
+.accordion-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 8px;
+}
+
+.accordion-item.open {
+    border-color: var(--primary);
+    box-shadow: 0 4px 16px rgba(102,126,234,0.12);
+}
+
+.accordion-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    direction: rtl;
+    text-align: right;
+    transition: background 0.15s ease;
+}
+
+.accordion-icon-wrap {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 15px;
+    flex-shrink: 0;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+.accordion-title-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.accordion-title {
+    font-family: var(--font-persian);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.accordion-sub {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-family: var(--font-latin);
+    direction: ltr;
+    text-align: left;
+}
+
+.accordion-chevron {
+    color: var(--text-tertiary);
+    font-size: 13px;
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+}
+
+.accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1);
+    padding: 0;
+}
+
+.accordion-item.open .accordion-body {
+    padding: 12px 14px 14px;
+    max-height: 1500px;
+}
+
+/* ============================================
+   FIX: Y-SITE COMPATIBILITY BOXES in Drug Reference
+   ============================================ */
+.qref-compat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.qref-compat-col {
+    direction: rtl;
+}
+
+.qref-compat-title {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.qref-compat-col.compatible .qref-compat-title {
+    color: var(--success);
+}
+
+.qref-compat-col.incompatible .qref-compat-title {
+    color: var(--danger);
+}
+
+.qref-compat-item {
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding: 3px 0;
+    border-bottom: 1px solid var(--border-light);
+    line-height: 1.4;
+}
+
+.qref-warnings {
+    margin-top: 8px;
+}
+
+.qref-warnings-title {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--warning);
+    margin-bottom: 6px;
+}
+
+.qref-warning-item {
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding: 4px 8px;
+    background: rgba(251, 191, 36, 0.08);
+    border-right: 2px solid var(--warning);
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 4px;
+    direction: rtl;
+    line-height: 1.5;
+}
+
+/* ============================================
+   FIX: VOLUME PRESET BUTTONS BASE STYLES
+   ============================================ */
+.volume-preset-btn {
+    padding: 6px 10px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 14px;
+    min-width: 60px;
+    min-height: 42px;
+    text-align: center;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--text-secondary);
+}
+
+.volume-preset-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+/* ============================================
+   FIX: ENSURE ACTIVE METHOD BUTTONS HAVE GRADIENT
+   ============================================ */
+.method-btn-compact.active {
+    background: var(--gradient-primary) !important;
+    border-color: transparent !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
