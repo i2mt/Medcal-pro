@@ -494,7 +494,6 @@ function setupMobileLayout() {
         fixMethodButtonTextColor();
         TextDirection.applyBidiFixes();
         setupMobileNumericKeyboard();
-        // Sticky calculate button adjustment
         if (DOM.calculateBtnWrap) {
             DOM.calculateBtnWrap.style.position = 'sticky';
             DOM.calculateBtnWrap.style.bottom = '0';
@@ -557,7 +556,6 @@ function ensureContentVisibility() {
 }
 
 function fixVolumeButtonColors() {
-    // Ensure active volume preset buttons have white text
     document.querySelectorAll('.volume-preset-btn.active').forEach(btn => {
         btn.style.setProperty('color', 'white', 'important');
         btn.querySelectorAll('.number, .unit-text, .custom-text, span').forEach(el => {
@@ -730,7 +728,6 @@ function saveSettings() {
 }
 
 function applySettings() {
-    // Dark mode
     if (AppState.settings.darkMode) {
         document.body.classList.add('dark-mode');
         AppState.theme = 'dark';
@@ -748,13 +745,10 @@ function applySettings() {
             if (icon) icon.className = 'fas fa-moon';
         }
     }
-    // Large font
     if (AppState.settings.largeFont) document.body.classList.add('large-font');
     else document.body.classList.remove('large-font');
-    // Colour theme (must be applied after dark mode class is set)
     const savedColor = AppState.settings.colorTheme || 'default';
     applyTheme(savedColor);
-    // Fix button colors after theme change
     fixVolumeButtonColors();
 }
 
@@ -804,7 +798,6 @@ function selectDrug(drugId) {
     if (DOM.weightContainer && DOM.weightCheckbox && DOM.patientWeight) {
         if (drug.weightBased && drug.weightBased.active) {
             DOM.weightContainer.style.display = 'block';
-            // Reset toggle to off state when drug changes
             if (DOM.weightIosToggle) DOM.weightIosToggle.classList.remove('on');
             if (DOM.weightInputRow) DOM.weightInputRow.style.display = 'none';
             const defaultUseWeight = drug.weightBased.defaultUseWeight !== undefined ? drug.weightBased.defaultUseWeight : false;
@@ -1060,7 +1053,6 @@ function clearResults() {
     if (DOM.warningsSection) DOM.warningsSection.style.display = 'none';
     if (DOM.compatibilitySection) DOM.compatibilitySection.style.display = 'none';
     if (DOM.dripRateRow) DOM.dripRateRow.style.display = 'none';
-    // Restore pump rate card in case it was repurposed for reverse mode
     const pumpRateCard = document.getElementById('pumpRateResult')?.closest('.result-item-enhanced');
     if (pumpRateCard) {
         pumpRateCard.classList.remove('highlight');
@@ -1184,9 +1176,34 @@ function setupEventListeners() {
         const maxAmpoules = Math.floor(1000 / drug.ampouleOptions[0].strength) || 20;
         if (AppState.ampouleCount < maxAmpoules) { AppState.ampouleCount++; updateAmpouleInfo(); clearResults(); }
     });
-    // Weight iOS toggle (the visible toggle)
+    
+    // Weight toggle row click handling (whole row)
+    const weightToggleRow = document.getElementById('weightToggleRow');
+    if (weightToggleRow) {
+        weightToggleRow.addEventListener('click', (e) => {
+            // Prevent toggling twice if the click came from the toggle itself
+            if (e.target.closest('.ios-toggle')) return;
+            haptic(25);
+            AppState.useWeight = !AppState.useWeight;
+            if (DOM.weightCheckbox) DOM.weightCheckbox.checked = AppState.useWeight;
+            if (DOM.weightIosToggle) DOM.weightIosToggle.classList.toggle('on', AppState.useWeight);
+            if (DOM.weightInputRow) {
+                DOM.weightInputRow.style.display = AppState.useWeight ? 'flex' : 'none';
+            }
+            if (DOM.patientWeight) {
+                DOM.patientWeight.disabled = !AppState.useWeight;
+                if (AppState.useWeight) setTimeout(() => DOM.patientWeight.focus(), 150);
+            }
+            const drug = drugDatabase[AppState.selectedDrug];
+            updateWeightBasedUnit(drug);
+            clearResults();
+        });
+    }
+    
+    // Also keep individual toggle click (to update the row state without double toggling)
     if (DOM.weightIosToggle) {
-        DOM.weightIosToggle.addEventListener('click', () => {
+        DOM.weightIosToggle.addEventListener('click', (e) => {
+            e.stopPropagation(); // prevent row handler from firing again
             haptic(25);
             AppState.useWeight = !AppState.useWeight;
             if (DOM.weightCheckbox) DOM.weightCheckbox.checked = AppState.useWeight;
@@ -1291,7 +1308,6 @@ function setupEventListeners() {
         });
     }
 
-    // Dose range live indicator
     if (DOM.doctorOrder) {
         DOM.doctorOrder.addEventListener('input', () => {
             clearResults();
@@ -1572,26 +1588,20 @@ function calculateManualInfusion() {
     const { factor: dripFactor, label: dripLabel } = getDripFactor(solutionVolume);
     const dropsPerMin = (pumpRate * dripFactor) / 60;
 
-    // Total drug
     const totalEl = document.getElementById('manualTotalDrug');
     const totalUnitEl = document.getElementById('manualTotalDrugUnit');
     if (totalEl) totalEl.textContent = PersianNumbers.formatNumber(totalDrug, 0);
     if (totalUnitEl) totalUnitEl.innerHTML = `<span class="latin-inline">${strengthUnit}</span>`;
 
-    // Concentration
     document.getElementById('manualConcentration').textContent = PersianNumbers.formatNumber(concentration, 3);
     document.getElementById('manualConcentrationUnit').innerHTML = `<span class="latin-inline">${strengthUnit}/cc</span>`;
-
-    // Pump rate
     document.getElementById('manualPumpRate').textContent = PersianNumbers.formatNumber(pumpRate, 2);
 
-    // Drip rate
     const dripRateEl = document.getElementById('manualDripRate');
     const dripLabelEl = document.getElementById('manualDripLabel');
     if (dripRateEl) dripRateEl.textContent = PersianNumbers.formatNumber(dropsPerMin, 1);
     if (dripLabelEl) dripLabelEl.textContent = 'سرعت قطره (' + dripLabel + ')';
 
-    // Duration
     const durationEl = document.getElementById('manualDuration');
     if (durationEl) durationEl.textContent = PersianNumbers.formatNumber(duration, 1) + ' ساعت';
 
@@ -1626,14 +1636,11 @@ function toggleTheme() {
     document.body.classList.toggle('dark-mode', AppState.theme === 'dark');
     AppState.settings.darkMode = AppState.theme === 'dark';
     saveSettings();
-    // Update theme-color meta
     const meta = document.getElementById('themeColorMeta');
     if (meta) meta.content = AppState.theme === 'dark' ? '#1f2937' : '#ffffff';
-    // Re-apply colour theme for new light/dark context
     applyTheme(AppState.settings.colorTheme || 'default');
     const icon = DOM.themeToggle.querySelector('i');
     if (icon) icon.className = AppState.theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-    // Sync settings checkbox
     if (DOM.darkModeToggle) DOM.darkModeToggle.checked = AppState.theme === 'dark';
     localStorage.setItem('theme', AppState.theme);
     fixVolumeButtonColors();
@@ -2043,7 +2050,7 @@ function loadDrugLibrary() {
         if (drug.typicalDoseRange) {
             const minFormatted = PersianNumbers.formatNumber(drug.typicalDoseRange.min, 1);
             const maxFormatted = PersianNumbers.formatNumber(drug.typicalDoseRange.max, 1);
-            doseRangeDisplay = `<span class="latin-inline" style="direction:ltr;unicode-bidi:isolate;">${minFormatted}–${maxFormatted} ${drug.typicalDoseRange.unit}</span>`;
+            doseRangeDisplay = `<span dir="ltr" style="display:inline-block; unicode-bidi:isolate;">${minFormatted}–${maxFormatted} ${drug.typicalDoseRange.unit}</span>`;
         }
         const maxConc = drug.maxSafeConcentration || '--';
         const solutions = drug.solutionType.join(' / ');
@@ -2560,7 +2567,6 @@ function showUpdateBanner() {
 function setupUpdateDetection() {
     if (!('serviceWorker' in navigator)) return;
 
-    // Flag to prevent double reload on first install
     let firstInstall = localStorage.getItem('sw_first_install') === null;
     if (firstInstall) {
         localStorage.setItem('sw_first_install', 'true');
@@ -2584,10 +2590,8 @@ function setupUpdateDetection() {
     });
 
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-        // Only reload if not first install to avoid double refresh
         if (localStorage.getItem('sw_first_install') === 'true') {
             localStorage.setItem('sw_first_install', 'false');
-            // Don't reload on first install
         } else {
             setTimeout(() => window.location.reload(), 300);
         }
@@ -2724,6 +2728,7 @@ function toggleAccordion(headerBtn) {
         if (openItem !== item) {
             openItem.classList.remove('open');
             openItem.querySelector('.accordion-body').style.maxHeight = '0';
+            openItem.querySelector('.accordion-body').style.padding = '0';
             openItem.querySelector('.accordion-chevron').style.transform = '';
         }
     });
@@ -2731,10 +2736,12 @@ function toggleAccordion(headerBtn) {
     if (isOpen) {
         item.classList.remove('open');
         body.style.maxHeight = '0';
+        body.style.padding = '0';
         chevron.style.transform = '';
     } else {
         item.classList.add('open');
         body.style.maxHeight = body.scrollHeight + 2000 + 'px';
+        body.style.padding = '12px 14px 14px';
         chevron.style.transform = 'rotate(180deg)';
         haptic(20);
         setTimeout(() => item.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 200);
@@ -2759,7 +2766,7 @@ function toggleAccordionById(bodyId) {
         if (openItem !== item) {
             openItem.classList.remove('open');
             const b = openItem.querySelector('.accordion-body');
-            if (b) b.style.maxHeight = '0';
+            if (b) { b.style.maxHeight = '0'; b.style.padding = '0'; }
             const c = openItem.querySelector('.qref-chevron i');
             if (c) c.style.transform = '';
         }
@@ -2767,10 +2774,12 @@ function toggleAccordionById(bodyId) {
     if (isOpen) {
         item.classList.remove('open');
         body.style.maxHeight = '0';
+        body.style.padding = '0';
         if (chevronIcon) chevronIcon.style.transform = '';
     } else {
         item.classList.add('open');
         body.style.maxHeight = body.scrollHeight + 1000 + 'px';
+        body.style.padding = '0 12px 12px';
         if (chevronIcon) chevronIcon.style.transform = 'rotate(180deg)';
         haptic(20);
         setTimeout(() => item.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 200);
