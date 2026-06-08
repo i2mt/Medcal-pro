@@ -3189,22 +3189,61 @@ function setupUserName() {
     const hint    = document.getElementById('userNameHint');
     if (!input || !saveBtn) return;
 
-    // Load stored name
-    input.value = localStorage.getItem('userName') || '';
+    // Get stored name
+    let storedName = localStorage.getItem('userName') || '';
 
+    // Helper: update button active state based on current input vs stored name
+    function updateButtonState() {
+        const currentValue = input.value.trim();
+        const isValid = currentValue !== '' && currentValue !== storedName;
+        if (isValid) {
+            saveBtn.classList.add('active');
+        } else {
+            saveBtn.classList.remove('active');
+        }
+    }
+
+    // Helper: save name (only if button is active)
     function saveName() {
-        const val = input.value.trim();
-        localStorage.setItem('userName', val);
+        if (!saveBtn.classList.contains('active')) return; // prevent saving empty/duplicate
+
+        const newName = input.value.trim();
+        localStorage.setItem('userName', newName);
+        storedName = newName;   // update internal stored reference
+
         if (hint) {
-            hint.textContent = val ? `نام ذخیره شد: ${val}` : 'نامی ذخیره نشده';
+            hint.textContent = newName ? `نام ذخیره شد: ${newName}` : 'نامی ذخیره نشده';
             hint.classList.add('hint-saved');
             setTimeout(() => {
                 hint.textContent = 'برای ذخیره Enter بزنید یا روی ✓ کلیک کنید';
                 hint.classList.remove('hint-saved');
             }, 2000);
         }
+
+        // After saving, button should become inactive (no pending change)
+        updateButtonState();
     }
 
+    // Set initial value
+    input.value = storedName;
+
+    // Initial button state
+    updateButtonState();
+
+    // Event: input changes
+    input.addEventListener('input', updateButtonState);
+
+    // Event: save button click
     saveBtn.addEventListener('click', saveName);
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') { saveName(); input.blur(); } });
+
+    // Event: Enter key in input field
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (saveBtn.classList.contains('active')) {
+                saveName();
+                input.blur();
+            }
+        }
+    });
 }
