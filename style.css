@@ -4965,15 +4965,17 @@ input[type="search"]::placeholder {
     border-color: var(--border);
 }
 
-/* ===== Active volume preset buttons – ensure gradient and white text ===== */
-.dark-mode .volume-preset-btn.active,
+/* ===== Active volume preset buttons – gradient on button only, white text without double background ===== */
+.dark-mode .volume-preset-btn.active {
+    background: var(--gradient-primary) !important;
+    border-color: transparent !important;
+}
 .dark-mode .volume-preset-btn.active .number,
 .dark-mode .volume-preset-btn.active .unit-text,
 .dark-mode .volume-preset-btn.active .custom-text,
 .dark-mode .volume-preset-btn.active span {
-    background: var(--gradient-primary) !important;
     color: white !important;
-    border-color: transparent !important;
+    background: none !important;
 }
 
 /* Header button animations */
