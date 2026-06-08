@@ -7779,50 +7779,79 @@ html {
     border-color: #4a5568;
 }
 
-/* Custom numeric keypad */
+/* Custom Numeric Keypad – Modern, responsive, sticky */
 .custom-keypad {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     background: var(--surface);
-    border-top: 2px solid var(--primary);
-    display: grid;
+    border-top: 3px solid var(--primary);
+    display: none;
     grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-    padding: 12px;
+    gap: 8px;
+    padding: 14px 12px calc(14px + env(safe-area-inset-bottom, 0px));
     z-index: 10000;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
-    animation: slideUp 0.25s ease;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.2);
     direction: ltr;
+    transform: translateY(100%);
+    transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
 }
+
+.custom-keypad.visible {
+    transform: translateY(0);
+}
+
 .custom-keypad button {
-    padding: 14px;
-    font-size: 22px;
+    padding: 16px 8px;
+    font-size: 24px;
     font-weight: 600;
     background: var(--surface-elevated);
     border: 1.5px solid var(--border);
-    border-radius: 12px;
+    border-radius: 14px;
     color: var(--text-primary);
     cursor: pointer;
-    transition: all 0.1s ease;
+    transition: all 0.08s linear;
     font-family: var(--font-mono);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
+
 .custom-keypad button:active {
-    transform: scale(0.96);
+    transform: scale(0.94);
     background: var(--primary-light);
+    border-color: var(--primary);
 }
+
 .custom-keypad .keypad-done {
     background: var(--gradient-primary);
     color: white;
     border-color: transparent;
     grid-column: span 2;
+    font-size: 18px;
+    font-weight: 700;
 }
+
 .custom-keypad .keypad-backspace {
     background: var(--danger);
     color: white;
+    border-color: transparent;
 }
-@keyframes slideUp {
-    from { transform: translateY(100%); }
-    to   { transform: translateY(0); }
+
+/* Dark mode adjustments */
+.dark-mode .custom-keypad {
+    background: var(--surface);
+    border-top-color: var(--primary);
+}
+
+.dark-mode .custom-keypad button {
+    background: var(--surface-elevated);
+    border-color: #4b5563;
+    color: var(--text-primary);
+}
+
+/* Ensure inputs look normal when readonly */
+input[readonly] {
+    background-color: var(--surface-elevated);
+    opacity: 0.9;
+    cursor: default;
 }
