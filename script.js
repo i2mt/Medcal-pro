@@ -689,6 +689,8 @@ function initializeApp() {
     setupBurns();
     setupThemePicker();
     setupUpdateDetection();
+    setupUserName();
+    showGreetingBanner();
 }
 
 function setupMobileOptimizations() {
@@ -3088,3 +3090,72 @@ window.resetBurns = resetBurns;
 window.updateParkland = updateParkland;
 window.restoreFromHistory = restoreFromHistory;
 window.updateDoseRangeIndicator = updateDoseRangeIndicator;
+
+// ============================================
+// USER NAME & GREETING BANNER
+// ============================================
+function getGreeting() {
+    const h = new Date().getHours();
+    if (h >= 5  && h < 12) return 'صبح بخیر';
+    if (h >= 12 && h < 17) return 'ظهر بخیر';
+    if (h >= 17 && h < 21) return 'عصر بخیر';
+    return 'شب بخیر';
+}
+
+function showGreetingBanner() {
+    const banner = document.getElementById('greetingBanner');
+    const textEl = document.getElementById('greetingText');
+    const closeBtn = document.getElementById('greetingClose');
+    if (!banner || !textEl) return;
+
+    const name = localStorage.getItem('userName') || '';
+    const greeting = getGreeting();
+    textEl.textContent = name ? `${greeting}، ${name} عزیز 👋` : `${greeting} 👋`;
+
+    banner.style.display = 'flex';
+    banner.classList.remove('banner-hiding');
+    banner.classList.add('banner-visible');
+
+    // Auto-dismiss after 4.5 s
+    let autoDismiss = setTimeout(dismissBanner, 4500);
+
+    function dismissBanner() {
+        clearTimeout(autoDismiss);
+        banner.classList.add('banner-hiding');
+        banner.addEventListener('animationend', () => { banner.style.display = 'none'; }, { once: true });
+    }
+
+    closeBtn.addEventListener('click', dismissBanner);
+}
+
+function setupUserName() {
+    const display   = document.getElementById('userNameDisplay');
+    const editRow   = document.getElementById('userNameEditRow');
+    const editBtn   = document.getElementById('userNameEditBtn');
+    const input     = document.getElementById('userNameInput');
+    const saveBtn   = document.getElementById('userNameSaveBtn');
+    if (!display || !editRow || !editBtn || !input || !saveBtn) return;
+
+    // Load stored name
+    const saved = localStorage.getItem('userName') || '';
+    display.textContent = saved || '—';
+    input.value = saved;
+
+    editBtn.addEventListener('click', () => {
+        input.value = localStorage.getItem('userName') || '';
+        editRow.style.display = 'flex';
+        editBtn.style.display = 'none';
+        input.focus();
+    });
+
+    function saveName() {
+        const val = input.value.trim();
+        localStorage.setItem('userName', val);
+        display.textContent = val || '—';
+        editRow.style.display = 'none';
+        editBtn.style.display = '';
+    }
+
+    saveBtn.addEventListener('click', saveName);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
+}
