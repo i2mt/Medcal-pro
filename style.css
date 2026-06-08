@@ -7248,3 +7248,192 @@ html {
     z-index: 10;
     border-top: 1px solid var(--border);
 }
+/* ============================================
+   LARGE FONT MODE - GLOBAL SCALING
+   ============================================ */
+.large-font {
+    font-size: 18px;
+}
+
+/* Base text elements */
+.large-font body,
+.large-font p,
+.large-font span:not(.latin-inline):not(.persian-inline),
+.large-font div:not(.result-item-enhanced):not(.control-group),
+.large-font .step-content,
+.large-font .warning-text,
+.large-font .compatibility-list,
+.large-font .drug-name-compact,
+.large-font .selected-drug-name-compact,
+.large-font .selected-drug-desc-compact,
+.large-font .drug-library-label,
+.large-font .drug-library-value,
+.large-font .history-drug,
+.large-font .history-details,
+.large-font .about-row,
+.large-font .setting-item span,
+.large-font .toast-title,
+.large-font .toast-message,
+.large-font .guide-step .step-content,
+.large-font .warning-item .warning-text {
+    font-size: 1.1em;
+}
+
+/* Headers and titles */
+.large-font h1, .large-font h2, .large-font h3, .large-font h4,
+.large-font .logo-text h1,
+.large-font .converters-container h2,
+.large-font .drugs-container h2,
+.large-font .tools-container h2,
+.large-font .modal-header h3,
+.large-font .guide-header,
+.large-font .warnings-header,
+.large-font .compatibility-header,
+.large-font .results-header-row h3 {
+    font-size: 1.2em;
+}
+
+/* Form elements */
+.large-font input,
+.large-font select,
+.large-font textarea,
+.large-font .dose-input-wrapper input,
+.large-font .manual-input-with-unit input,
+.large-font .weight-input-row input,
+.large-font .volume-custom-input input {
+    font-size: 1.05em !important;
+    padding: 10px 12px !important;
+}
+
+/* Buttons */
+.large-font .calculate-btn-enhanced,
+.large-font .converter-btn,
+.large-font .tool-btn,
+.large-font .setting-btn,
+.large-font .method-btn-compact,
+.large-font .volume-preset-btn,
+.large-font .ampoule-type-btn,
+.large-font .qref-calc-btn,
+.large-font .tab-item span,
+.large-font .icon-btn {
+    font-size: 1em;
+    min-height: 48px;
+}
+
+/* Results cards */
+.large-font .result-value-enhanced {
+    font-size: 32px !important;
+}
+.large-font .result-item-enhanced.highlight .result-value-enhanced {
+    font-size: 36px !important;
+}
+.large-font .result-label-enhanced,
+.large-font .result-unit-enhanced {
+    font-size: 13px !important;
+}
+
+/* Drug library cards */
+.large-font .qref-name {
+    font-size: 16px;
+}
+.large-font .qref-english {
+    font-size: 13px;
+}
+.large-font .qref-info-label,
+.large-font .qref-info-val,
+.large-font .qref-ampoule-item {
+    font-size: 13px;
+}
+.large-font .qref-chip-value {
+    font-size: 13px;
+}
+.large-font .qref-chip-label {
+    font-size: 11px;
+}
+
+/* GCS and Burns */
+.large-font .gcs-domain-title,
+.large-font .gcs-btn-label,
+.large-font .gcs-note-item span,
+.large-font .burns-view-label,
+.large-font .burns-chip,
+.large-font .burns-result-label,
+.large-font .burns-note-item span {
+    font-size: 1em;
+}
+.large-font .gcs-total-score {
+    font-size: 40px;
+}
+
+/* Drip rate row */
+.large-font .drip-rate-label {
+    font-size: 12px;
+}
+.large-font .drip-rate-value {
+    font-size: 19px;
+}
+
+/* Toast messages */
+.large-font .toast-title {
+    font-size: 1rem;
+}
+.large-font .toast-message {
+    font-size: 0.95rem;
+}
+
+/* Accordion section headers */
+.large-font .accordion-title {
+    font-size: 1em;
+}
+.large-font .accordion-sub {
+    font-size: 0.85em;
+}
+.large-font .accordion-section-header span {
+    font-size: 0.9em;
+}
+
+/* Settings modal */
+.large-font .settings-group h4 {
+    font-size: 0.9em !important;
+}
+.large-font .setting-item span {
+    font-size: 0.95em !important;
+}
+.large-font .contact-handle {
+    font-size: 0.85em;
+}
+
+/* Keep Latin inline text readable */
+.large-font .latin-inline,
+.large-font .drug-name-english,
+.large-font .drug-library-english,
+.large-font .result-unit-enhanced,
+.large-font .dose-unit-enhanced {
+    font-size: 0.9em;
+}
+
+/* Mobile adjustments for large font */
+@media (max-width: 768px) {
+    .large-font {
+        font-size: 16px;
+    }
+    .large-font .result-value-enhanced {
+        font-size: 24px !important;
+    }
+    .large-font .result-item-enhanced.highlight .result-value-enhanced {
+        font-size: 28px !important;
+    }
+    .large-font .method-btn-compact,
+    .large-font .volume-preset-btn,
+    .large-font .ampoule-type-btn {
+        min-height: 48px;
+        font-size: 13px !important;
+    }
+    .large-font .calculate-btn-enhanced {
+        font-size: 15px !important;
+        padding: 12px !important;
+    }
+    .large-font .gcs-total-score {
+        font-size: 32px;
+    }
+}
