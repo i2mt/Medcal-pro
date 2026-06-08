@@ -1,7 +1,7 @@
 {
-    "name": "MedCalc Pro",
-    "short_name": "MedCalc",
-    "description": "دستیار هوشمند محاسبات دارویی برای پرستاران و پزشکان",
+    "name": "FoxiMed",
+    "short_name": "FoxiMed",
+    "description": "دستیار هوشمند محاسبات برای پرستاران و پزشکان",
     "start_url": "./index.html",
     "display": "standalone",
     "orientation": "portrait",
@@ -31,22 +31,6 @@
     "lang": "fa",
     "dir": "rtl",
     "scope": "./",
-    "screenshots": [
-        {
-            "src": "https://via.placeholder.com/540x720/2563eb/ffffff?text=MedCalc+Pro",
-            "sizes": "540x720",
-            "type": "image/png",
-            "form_factor": "narrow",
-            "label": "ماشین حساب دارویی"
-        },
-        {
-            "src": "https://via.placeholder.com/720x540/2563eb/ffffff?text=MedCalc+Pro",
-            "sizes": "720x540",
-            "type": "image/png",
-            "form_factor": "wide",
-            "label": "بانک اطلاعات دارویی"
-        }
-    ],
     "shortcuts": [
         {
             "name": "محاسبه جدید",
