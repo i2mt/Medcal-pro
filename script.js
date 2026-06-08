@@ -448,7 +448,6 @@ const DOM = {
     historyModal: document.getElementById('historyModal'),
     closeSettings: document.getElementById('closeSettings'),
     closeHistory: document.getElementById('closeHistory'),
-    darkModeToggle: document.getElementById('darkModeToggle'),
     largeFontToggle: document.getElementById('largeFontToggle'),
     doseAlertToggle: document.getElementById('doseAlertToggle'),
     compatAlertToggle: document.getElementById('compatAlertToggle'),
@@ -727,6 +726,7 @@ function loadSettings() {
     if (DOM.hapticToggle) DOM.hapticToggle.checked = AppState.settings.hapticFeedback !== false;
     if (DOM.themeModeSelect) DOM.themeModeSelect.value = AppState.settings.themeMode || 'light';
     applySettings();
+    syncThemeModeButtons();
 }
 
 function saveSettings() {
@@ -1378,6 +1378,16 @@ function setupSettingsEventListeners() {
         applyThemeMode();
         if (DOM.darkModeToggle) DOM.darkModeToggle.checked = AppState.settings.darkMode;
     });
+    // Theme mode 3-button row
+    const themeBtns = document.querySelectorAll('#themeModeButtons .theme-mode-btn');
+    themeBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            AppState.settings.themeMode = this.dataset.mode;
+            saveSettings();
+            applyThemeMode();
+            syncThemeModeButtons();
+        });
+    });
     if (DOM.checkUpdateBtn) DOM.checkUpdateBtn.addEventListener('click', async function() {
         this.disabled = true;
         const origHTML = this.innerHTML;
@@ -1645,6 +1655,14 @@ function switchTab(tabName) {
 // ============================================
 // THEME
 // ============================================
+function syncThemeModeButtons() {
+    const mode = AppState.settings.themeMode || 'light';
+    document.querySelectorAll('#themeModeButtons .theme-mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+    if (DOM.themeModeSelect) DOM.themeModeSelect.value = mode;
+}
+
 // ============================================
 // THEME MODE (Light / Dark / Auto)
 // ============================================
@@ -1659,6 +1677,7 @@ function applyThemeMode() {
     if (DOM.darkModeToggle) DOM.darkModeToggle.checked = shouldBeDark;
     localStorage.setItem('theme', AppState.theme);
     saveSettings();
+    syncThemeModeButtons();
 }
 
 function setupThemeModeListener() {
@@ -3165,33 +3184,27 @@ function showGreetingBanner() {
 }
 
 function setupUserName() {
-    const display   = document.getElementById('userNameDisplay');
-    const editRow   = document.getElementById('userNameEditRow');
-    const editBtn   = document.getElementById('userNameEditBtn');
-    const input     = document.getElementById('userNameInput');
-    const saveBtn   = document.getElementById('userNameSaveBtn');
-    if (!display || !editRow || !editBtn || !input || !saveBtn) return;
+    const input   = document.getElementById('userNameInput');
+    const saveBtn = document.getElementById('userNameSaveBtn');
+    const hint    = document.getElementById('userNameHint');
+    if (!input || !saveBtn) return;
 
     // Load stored name
-    const saved = localStorage.getItem('userName') || '';
-    display.textContent = saved || '—';
-    input.value = saved;
-
-    editBtn.addEventListener('click', () => {
-        input.value = localStorage.getItem('userName') || '';
-        editRow.style.display = 'flex';
-        editBtn.style.display = 'none';
-        input.focus();
-    });
+    input.value = localStorage.getItem('userName') || '';
 
     function saveName() {
         const val = input.value.trim();
         localStorage.setItem('userName', val);
-        display.textContent = val || '—';
-        editRow.style.display = 'none';
-        editBtn.style.display = '';
+        if (hint) {
+            hint.textContent = val ? `نام ذخیره شد: ${val}` : 'نامی ذخیره نشده';
+            hint.classList.add('hint-saved');
+            setTimeout(() => {
+                hint.textContent = 'برای ذخیره Enter بزنید یا روی ✓ کلیک کنید';
+                hint.classList.remove('hint-saved');
+            }, 2000);
+        }
     }
 
     saveBtn.addEventListener('click', saveName);
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') { saveName(); input.blur(); } });
 }
