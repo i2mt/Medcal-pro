@@ -303,15 +303,15 @@
     color: var(--text-primary) !important;
 }
 
-/* ===== FIX: Inactive volume preset buttons – solid color, not gradient ===== */
+/* ===== FIX: Inactive volume preset buttons – better contrast in dark mode ===== */
 .dark-mode .volume-preset-btn:not(.active) {
-    background: #2d3748 !important;  /* lighter than surface */
+    background: #2d3748 !important;
     border-color: #4a5568 !important;
-    color: #e2e8f0 !important;       /* brighter text */
+    color: #e2e8f0 !important;
 }
 .dark-mode .volume-preset-btn:not(.active) .number,
 .dark-mode .volume-preset-btn:not(.active) .unit-text {
-        color: #e2e8f0 !important;
+    color: #e2e8f0 !important;
     background: none !important;
     -webkit-text-fill-color: #e2e8f0 !important;
 }
@@ -7389,4 +7389,31 @@ html {
 
 .user-name-save-btn:hover {
     opacity: 0.9;
+}
+
+/* ============================================
+   THEME MODE SELECT
+   ============================================ */
+.theme-mode-select {
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: var(--font-persian);
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+    direction: rtl;
+}
+
+.theme-mode-select:focus {
+    border-color: var(--primary);
+}
+
+.dark-mode .theme-mode-select {
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+    border-color: #4a5568;
 }
