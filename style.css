@@ -3028,6 +3028,14 @@ select {
         z-index: 1000;
     }
 
+    /* Calculator tab must not scroll itself — children handle their own scroll */
+    #calculatorTab {
+        overflow: hidden;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
     /* Calculator layout fills the main content */
     .calculator-layout {
         height: 100%;
@@ -6522,7 +6530,7 @@ input[type="search"]::placeholder {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    direction: rtl;
+    direction: ltr;
 }
 
 .qref-ampoule-item {
@@ -6533,10 +6541,12 @@ input[type="search"]::placeholder {
     background: var(--primary-light);
     border: 1px solid var(--primary);
     border-radius: 20px;
-    font-family: var(--font-persian);
+    font-family: var(--font-mono);
     font-size: 11.5px;
     color: var(--primary);
     font-weight: 500;
+    direction: ltr;
+    unicode-bidi: isolate;
 }
 
 .qref-ampoule-item i { font-size: 10px; }
