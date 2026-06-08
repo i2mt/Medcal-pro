@@ -967,7 +967,7 @@ const drugDatabase = {
         monitoring: [
             'ECG مداوم برای QT interval',
             'علائم فیبروز ریوی (سرفه، تنگی نفس)',
-                'عملکرد تیروئید (TSH)',
+            'عملکرد تیروئید (TSH)',
             'عملکرد کبدی (AST, ALT, Alk Phos)',
             'معاینه چشم (خطر نوروپاتی اپتیک)',
             'سطح دارو در خون',
@@ -987,7 +987,6 @@ const drugDatabase = {
     }
 };
 
-// Search function
 function searchDrugs(query) {
     const normalizedQuery = query.toLowerCase().trim();
     
@@ -1013,6 +1012,5 @@ function searchDrugs(query) {
     return results;
 }
 
-// Make functions available globally
 window.drugDatabase = drugDatabase;
 window.searchDrugs = searchDrugs;
