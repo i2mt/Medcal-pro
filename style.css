@@ -7195,3 +7195,24 @@ html {
     .update-banner { left: 8px; right: 8px; padding: 10px 12px; }
     .update-banner-btn { padding: 0 10px; font-size: 12px; }
 }
+/* Ensure calculator-main uses flex column with space-between */
+.calculator-main {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-lg);
+    gap: var(--spacing-lg);
+}
+
+/* Button wrapper sticks to bottom */
+.calculate-btn-sticky-wrap {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-primary);
+    padding: 10px 12px;
+    margin: 0;
+    z-index: 10;
+    border-top: 1px solid var(--border);
+}
