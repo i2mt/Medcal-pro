@@ -2051,7 +2051,7 @@ let doseRangeDisplay = '--';
 if (drug.typicalDoseRange) {
     const minFormatted = PersianNumbers.formatNumber(drug.typicalDoseRange.min, 1);
     const maxFormatted = PersianNumbers.formatNumber(drug.typicalDoseRange.max, 1);
-    doseRangeDisplay = `<span dir="ltr" style="display:inline-block; unicode-bidi:isolate;">${minFormatted}–${maxFormatted} ${drug.typicalDoseRange.unit}</span>`;
+    doseRangeDisplay = '<span dir="ltr" style="display:inline-block; unicode-bidi:isolate;">' + minFormatted + '–' + maxFormatted + ' ' + drug.typicalDoseRange.unit + '</span>';
 }
         const maxConc = drug.maxSafeConcentration || '--';
         const solutions = drug.solutionType.join(' / ');
