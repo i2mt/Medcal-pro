@@ -1206,6 +1206,25 @@
     <script src="converters.js"></script>
     <script src="script.js"></script>
     <script>
+        // Measure tab-bar height as early as possible to avoid layout gap on first load
+        (function() {
+            function earlyMeasure() {
+                var tabBar = document.querySelector('.tab-bar');
+                if (tabBar) {
+                    var h = tabBar.getBoundingClientRect().height;
+                    if (h > 20) {
+                        document.documentElement.style.setProperty('--tab-bar-height', h + 'px');
+                        return true;
+                    }
+                }
+                return false;
+            }
+            if (!earlyMeasure()) {
+                [0, 50, 150, 300].forEach(function(d) { setTimeout(earlyMeasure, d); });
+            }
+        })();
+    </script>
+    <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('service-worker.js');
