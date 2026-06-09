@@ -871,6 +871,19 @@ function selectDrug(drugId) {
     AppState.ampouleCount = drug.defaultAmpoules;
     AppState.currentAmpouleIndex = 0;
 
+    // Close manual calculator if open
+    const manualSection = document.getElementById('manualSection');
+    const calculatorControls = document.getElementById('calculatorControls');
+    if (manualSection && manualSection.style.display !== 'none') {
+        manualSection.style.display = 'none';
+        if (calculatorControls) calculatorControls.style.display = 'grid';
+        if (DOM.calculateBtnWrap) DOM.calculateBtnWrap.style.display = 'block';
+        const selectedDrugHeader = document.querySelector('.selected-drug-compact');
+        if (selectedDrugHeader) selectedDrugHeader.style.display = 'flex';
+        const drugSidebar = document.querySelector('.drug-sidebar');
+        if (drugSidebar && window.innerWidth < 768) drugSidebar.removeAttribute('style');
+    }
+
     DOM.selectedDrugName.textContent = drug.persianName;
     DOM.selectedDrugDesc.innerHTML = `
         <span class="persian-inline">${drug.persianName}</span>
@@ -1683,7 +1696,7 @@ function createManualCalculationContent() {
                     <button class="volume-preset-btn" data-vol="10"><span class="number">10</span><span class="unit-text">cc</span></button>
                     <button class="volume-preset-btn" data-vol="20"><span class="number">20</span><span class="unit-text">cc</span></button>
                     <button class="volume-preset-btn active" data-vol="50"><span class="number">50</span><span class="unit-text">cc</span></button>
-                    <button class="volume-preset-btn" data-vol="100"><span class="number">100</span><span class="unit-text">cc</span></button>
+                    <button class="volume-preset-btn" data-vol="100" style="display:none;"><span class="number">100</span><span class="unit-text">cc</span></button>
                     <button class="volume-preset-btn" data-vol="250"><span class="number">250</span><span class="unit-text">cc</span></button>
                     <button class="volume-preset-btn" data-vol="500"><span class="number">500</span><span class="unit-text">cc</span></button>
                     <button class="volume-preset-btn" data-vol="custom"><span class="custom-text">سایر</span></button>
@@ -1784,10 +1797,21 @@ function setupManualCalculationFunctionality() {
         // Adjust volume presets based on method
         const isSyringe = this.dataset.method === 'syringe';
         document.querySelectorAll('#manualVolumePresets .volume-preset-btn').forEach(b => {
-            if (!b.dataset.vol) return;
+            if (!b.dataset.vol || b.dataset.vol === 'custom') return;
             const vol = parseInt(b.dataset.vol);
-            if (!isNaN(vol)) b.style.display = (isSyringe ? vol <= 100 : vol >= 100 || isNaN(vol)) ? '' : 'none';
+            if (isSyringe) {
+                b.style.display = vol < 100 ? '' : 'none';
+            } else {
+                b.style.display = vol >= 100 ? '' : 'none';
+            }
         });
+        // Reset active selection to first visible
+        let firstVisible = null;
+        document.querySelectorAll('#manualVolumePresets .volume-preset-btn').forEach(b => {
+            b.classList.remove('active');
+            if (!firstVisible && b.style.display !== 'none' && b.dataset.vol !== 'custom') firstVisible = b;
+        });
+        if (firstVisible) firstVisible.classList.add('active');
         fixVolumeButtonColors();
     }));
 
