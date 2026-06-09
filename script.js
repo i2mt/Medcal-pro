@@ -1,4 +1,16 @@
 // ============================================
+// FoxiMed — Medical Calculator PWA
+// © 2026 Mohammad Mahdi Taghavi. All rights reserved.
+//
+// License: CC BY-NC 4.0
+// You may share and adapt this work for non-commercial purposes
+// with appropriate credit. Commercial use is prohibited.
+// https://creativecommons.org/licenses/by-nc/4.0/
+//
+// Contact: https://t.me/i_2mt
+// ============================================
+
+// ============================================
 // APP STATE & CONFIGURATION
 // ============================================
 const AppState = {
@@ -1001,8 +1013,8 @@ function setupCustomAmountUI(drug) {
     } else {
         if (DOM.customAmountToggleRow) DOM.customAmountToggleRow.style.display = 'flex';
         if (DOM.customAmountToggleLabel) DOM.customAmountToggleLabel.textContent = 'مقدار دلخواه دارو';
-        if (DOM.ampouleCounterRow) DOM.ampouleCounterRow.style.display = 'flex';
-        if (DOM.ampouleInfo) DOM.ampouleInfo.style.display = '';
+        if (DOM.ampouleCounterRow) { DOM.ampouleCounterRow.style.display = 'flex'; DOM.ampouleCounterRow.classList.remove('ampoule-greyed'); }
+        if (DOM.ampouleInfo) { DOM.ampouleInfo.style.display = ''; DOM.ampouleInfo.classList.remove('ampoule-greyed'); }
         if (DOM.customAmountInputRow) DOM.customAmountInputRow.style.display = 'none';
 
         const newToggle = DOM.customAmountToggle.cloneNode(true);
@@ -1019,24 +1031,29 @@ function setupCustomAmountUI(drug) {
                     .forEach(c => c.classList.remove('active'));
             }
             if (DOM.customAmountInputRow) DOM.customAmountInputRow.style.display = this.checked ? 'flex' : 'none';
-            if (DOM.ampouleCounterRow) DOM.ampouleCounterRow.style.display = this.checked ? 'none' : 'flex';
-            if (DOM.ampouleInfo) DOM.ampouleInfo.style.display = this.checked ? 'none' : '';
+            // Grey out ampoule counter instead of hiding it
+            if (DOM.ampouleCounterRow) DOM.ampouleCounterRow.classList.toggle('ampoule-greyed', this.checked);
+            if (DOM.ampouleInfo) DOM.ampouleInfo.classList.toggle('ampoule-greyed', this.checked);
             clearResults();
         });
     }
 }
 
 function getAmountPresets(drug, unit) {
-    if (drug.id === 'insulin') return [20, 25, 50, 100];
-    if (unit === 'mg') {
-        const strength = drug.ampouleOptions[0]?.strength || 0;
-        if (strength >= 200) return [200, 300, 400, strength];
-        if (strength >= 50)  return [50, 100, 150, strength];
-        return [10, 20, 50];
-    }
-    if (unit === 'mcg') return [200, 400, 800];
-    if (unit === 'units') return [5000, 10000, 25000];
-    return [];
+    const perDrug = {
+        insulin:       [20, 25, 50, 100],
+        furosemide:    [50, 100],
+        fentanyl:      [500, 1000],
+        pantoprazole:  [80],
+        tng:           [5, 10, 20],
+        norepinephrine:[4, 5, 10],
+        midazolam:     [10, 20, 25, 50],
+        octreotide:    [250, 500],
+        labetalol:     [50, 100, 200],
+        dopamine:      [200, 400],
+        amiodarone:    [150, 300],
+    };
+    return perDrug[drug.id] || [];
 }
 
 
