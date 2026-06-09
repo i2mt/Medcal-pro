@@ -105,7 +105,15 @@ const AppState = {
         const screen = document.getElementById('loadingScreen');
         if (!screen) return;
         screen.classList.add('fade-out');
-        setTimeout(() => { screen.style.display = 'none'; }, 550);
+        setTimeout(() => {
+            screen.style.display = 'none';
+            // Update theme-color to match actual app theme now that loading is done
+            const meta = document.getElementById('themeColorMeta');
+            if (meta) {
+                const isDark = document.body.classList.contains('dark-mode');
+                meta.content = isDark ? '#1f2937' : '#ffffff';
+            }
+        }, 550);
     };
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -740,7 +748,6 @@ function initializeApp() {
     setupUpdateDetection();
     setupThemeModeListener();
     setupUserName();
-    // Delay banner until loading screen is gone (~2.5s for steps + 550ms fade)
     setTimeout(showGreetingBanner, 3200);
 }
 
@@ -2596,46 +2603,56 @@ function initSwipe() {
     if (window.innerWidth > 768) return; // desktop only
     const container = document.querySelector('.main-content');
     if (!container) return;
-    
+
     let touchStartX = 0;
     let touchStartY = 0;
     let touchEndX = 0;
     let touchEndY = 0;
-    const minHorizontalDistance = 80;   // increased from 50
-    const maxVerticalDistance = 50;      // if vertical movement > this, ignore swipe
-    
+    let swipeLocked = false; // true when touch started inside a h-scrollable element
+    const minHorizontalDistance = 80;
+    const maxVerticalDistance = 50;
+
+    function isInsideHScrollable(el) {
+        // Walk up the DOM — if any ancestor (before .main-content) is
+        // horizontally scrollable and actually has overflow to scroll, lock swipe.
+        while (el && el !== container) {
+            const style = window.getComputedStyle(el);
+            const overflowX = style.overflowX;
+            const canScrollH = overflowX === 'auto' || overflowX === 'scroll';
+            if (canScrollH && el.scrollWidth > el.clientWidth + 2) return true;
+            el = el.parentElement;
+        }
+        return false;
+    }
+
     container.addEventListener('touchstart', (e) => {
         touchStartX = e.changedTouches[0].screenX;
         touchStartY = e.changedTouches[0].screenY;
+        swipeLocked = isInsideHScrollable(e.target);
     }, { passive: true });
-    
-    container.addEventListener('touchmove', (e) => {
-        // Optional: track current movement to abort early if vertical is dominant
-        // But we'll just use end position.
-    }, { passive: true });
-    
+
     container.addEventListener('touchend', (e) => {
+        if (swipeLocked) return; // touch started in drug list or similar — ignore
+
         touchEndX = e.changedTouches[0].screenX;
         touchEndY = e.changedTouches[0].screenY;
-        
+
         const diffX = Math.abs(touchEndX - touchStartX);
         const diffY = Math.abs(touchEndY - touchStartY);
-        
-        // Only trigger if horizontal movement is big enough AND
-        // horizontal movement is greater than vertical movement (no vertical scroll intention)
+
         if (diffX < minHorizontalDistance || diffY > diffX) return;
-        
+
         const direction = (touchEndX - touchStartX) > 0 ? 'right' : 'left';
         const tabs = ['calculator', 'drugs', 'tools'];
         const current = AppState.currentTab;
         let newIndex = tabs.indexOf(current);
-        
+
         if (direction === 'right') {
             newIndex = (newIndex - 1 + tabs.length) % tabs.length;
         } else {
             newIndex = (newIndex + 1) % tabs.length;
         }
-        
+
         if (newIndex !== tabs.indexOf(current)) {
             switchTab(tabs[newIndex]);
             haptic(20);
