@@ -156,7 +156,9 @@
 
                         <div class="calculator-controls-grid" id="calculatorControls">
                             <div class="control-group">
-                                <label><i class="fas fa-infinity"></i> روش تزریق</label>
+                                <label><i class="fas fa-infinity"></i> روش تزریق
+                                    <button class="help-icon" data-help="method">ⓘ</button>
+                                </label>
                                 <div class="method-selector-compact">
                                     <button class="method-btn-compact gradient active" data-method="syringe">
                                         <i class="fas fa-syringe"></i> <span>پمپ سرنگ</span>
@@ -168,7 +170,9 @@
                             </div>
 
                             <div class="control-group">
-                                <label><i class="fas fa-flask"></i> حجم محلول</label>
+                                <label><i class="fas fa-flask"></i> حجم محلول
+                                    <button class="help-icon" data-help="volume">ⓘ</button>
+                                </label>
                                 <div class="volume-selector-enhanced">
                                     <div class="volume-presets" id="volumeOptions"></div>
                                     <div class="volume-custom-input" id="customVolumeContainer" style="display: none;">
@@ -179,7 +183,9 @@
                             </div>
 
                             <div class="control-group">
-                                <label><i class="fas fa-syringe"></i> تعداد آمپول</label>
+                                <label><i class="fas fa-syringe"></i> مقدار دارو
+                                    <button class="help-icon" data-help="ampoule">ⓘ</button>
+                                </label>
                                 <div class="ampoule-control-enhanced" id="ampouleCounterRow">
                                     <button class="ampoule-btn-enhanced gradient" id="decreaseAmpoule"><i class="fas fa-minus"></i></button>
                                     <div class="ampoule-count-enhanced">
@@ -213,7 +219,9 @@
                             </div>
 
                             <div class="control-group">
-                                <label><i class="fas fa-file-medical-alt"></i> دوز درخواستی</label>
+                                <label><i class="fas fa-file-medical-alt"></i> دوز درخواستی
+                                    <button class="help-icon" data-help="dose">ⓘ</button>
+                                </label>
                                 <div class="dose-input-enhanced">
                                     <div class="dose-input-wrapper">
                                         <input type="number" id="doctorOrder" placeholder="0" min="0" step="0.1">
@@ -233,6 +241,7 @@
                                             <div class="calc-toggle-label">
                                                 <i class="fas fa-weight-scale"></i>
                                                 <span>محاسبه بر اساس وزن</span>
+                                                <button class="help-icon" data-help="weight">ⓘ</button>
                                             </div>
                                             <span class="ios-toggle" id="weightIosToggle">
                                                 <span class="ios-knob"></span>
@@ -253,6 +262,7 @@
                                             <div class="calc-toggle-label">
                                                 <i class="fas fa-arrow-right-arrow-left"></i>
                                                 <span>محاسبه معکوس</span>
+                                                <button class="help-icon" data-help="reverse">ⓘ</button>
                                             </div>
                                             <span class="ios-toggle" id="reverseIosToggle">
                                                 <span class="ios-knob"></span>
@@ -1243,5 +1253,11 @@
         }
     }, 5000);
 </script>
+    <!-- Help Popover -->
+    <div class="help-popover" id="helpPopover" style="display:none;">
+        <div class="help-popover-arrow"></div>
+        <p class="help-popover-text" id="helpPopoverText"></p>
+    </div>
+
 </body>
 </html>
