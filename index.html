@@ -235,15 +235,17 @@
                                 <label><i class="fas fa-file-medical-alt"></i> دوز درخواستی
                                     <button class="help-icon" data-help="dose">ⓘ</button>
                                 </label>
-                                <div class="dose-input-enhanced">
-                                    <div class="dose-input-wrapper">
-                                        <input type="number" id="doctorOrder" placeholder="0" min="0" step="0.1">
-                                        <span class="dose-unit-enhanced" id="orderUnit">units/hour</span>
+                                <div class="calc-toggle-item dose-input-card">
+                                    <div class="dose-input-enhanced">
+                                        <div class="dose-input-wrapper">
+                                            <input type="number" id="doctorOrder" placeholder="0" min="0" step="0.1">
+                                            <span class="dose-unit-enhanced" id="orderUnit">units/hour</span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="dose-range-indicator" id="doseRangeIndicator" style="display:none;">
-                                    <span class="dose-range-dot" id="doseRangeDot"></span>
-                                    <span class="dose-range-text" id="doseRangeText"></span>
+                                    <div class="dose-range-indicator" id="doseRangeIndicator" style="display:none;">
+                                        <span class="dose-range-dot" id="doseRangeDot"></span>
+                                        <span class="dose-range-text" id="doseRangeText"></span>
+                                    </div>
                                 </div>
 
                                 <!-- Stacked toggles -->
@@ -469,6 +471,327 @@
                                     <div class="gcs-severity-badge" id="gcsSeverityBadge"></div>
                                     <div class="gcs-notes" id="gcsNotes"></div>
                                     <button class="gcs-reset-btn" id="gcsResetBtn"><i class="fas fa-rotate-right"></i> شروع مجدد</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RASS -->
+                        <div class="accordion-item">
+                            <button class="accordion-header" onclick="toggleAccordion(this)">
+                                <div class="accordion-icon-wrap" style="background:linear-gradient(135deg,#0ea5e9,#6366f1)"><i class="fas fa-bed-pulse"></i></div>
+                                <div class="accordion-title-wrap">
+                                    <span class="accordion-title">مقیاس آرام‌بخشی ریچموند</span>
+                                    <span class="accordion-sub">Richmond Agitation-Sedation Scale — RASS</span>
+                                </div>
+                                <i class="fas fa-chevron-down accordion-chevron"></i>
+                            </button>
+                            <div class="accordion-body" id="rassAccordionBody">
+                                <div class="rass-scale">
+                                    <div class="rass-track" id="rassTrack">
+                                        <div class="rass-level" data-score="4">
+                                            <div class="rass-score-pill agitated">+۴</div>
+                                            <div class="rass-level-content">
+                                                <div class="rass-level-title">خشونت آشکار</div>
+                                                <div class="rass-level-desc">خشن، خطرناک برای کادر درمان</div>
+                                            </div>
+                                        </div>
+                                        <div class="rass-level" data-score="3">
+                                            <div class="rass-score-pill agitated">+۳</div>
+                                            <div class="rass-level-content">
+                                                <div class="rass-level-title">بسیار آژیته</div>
+                                                <div class="rass-level-desc">لوله‌ها را می‌کشد، تهاجمی است</div>
+                                            </div>
+                                        </div>
+                                        <div class="rass-level" data-score="2">
+                                            <div class="rass-score-pill agitated">+۲</div>
+                                            <div class="rass-level-content">
+                                                <div class="rass-level-title">آژیته</div>
+                                                <div class="rass-level-desc">حرکات مکرر، مقاوم در برابر ونتیلاتور</div>
+                                            </div>
+                                        </div>
+                                        <div class="rass-level" data-score="1">
+                                            <div class="rass-score-pill agitated">+۱</div>
+                                            <div class="rass-level-content">
+                                                <div class="rass-level-title">بی‌قرار</div>
+                                                <div class="rass-level-desc">نگران و بی‌قرار ولی حرکات تهاجمی ندارد</div>
+                                            </div>
+                                        </div>
+                                        <div class="rass-level rass-target" data-score="0">
+                                            <div class="rass-score-pill target">۰</div>
+                                            <div class="rass-level-content">
+                                                <div class="rass-level-title">هوشیار و آرام</div>
+                                                <div class="rass-level-desc">سطح هدف — هوشیار و آرام</div>
+                                            </div>
+                                        </div>
+                                        <div class="rass-level" data-score="-1">
+                                            <div class="rass-score-pill sedated">-۱</div>
+                                            <div class="rass-level-content">
+                                                <div class="rass-level-title">خواب‌آلود</div>
+                                                <div class="rass-level-desc">بیدار نمی‌ماند ولی با صدا بیدار می‌شود (>۱۰ ثانیه)</div>
+                                            </div>
+                                        </div>
+                                        <div class="rass-level" data-score="-2">
+                                            <div class="rass-score-pill sedated">-۲</div>
+                                            <div class="rass-level-content">
+                                                <div class="rass-level-title">سداسیون خفیف</div>
+                                                <div class="rass-level-desc">با صدا بیدار می‌شود، تماس کوتاه (<۱۰ ثانیه)</div>
+                                            </div>
+                                        </div>
+                                        <div class="rass-level" data-score="-3">
+                                            <div class="rass-score-pill sedated">-۳</div>
+                                            <div class="rass-level-content">
+                                                <div class="rass-level-title">سداسیون متوسط</div>
+                                                <div class="rass-level-desc">حرکت یا بازکردن چشم با صدا — بدون تماس چشمی</div>
+                                            </div>
+                                        </div>
+                                        <div class="rass-level" data-score="-4">
+                                            <div class="rass-score-pill sedated">-۴</div>
+                                            <div class="rass-level-content">
+                                                <div class="rass-level-title">سداسیون عمیق</div>
+                                                <div class="rass-level-desc">بدون پاسخ به صدا — با تحریک فیزیکی حرکت می‌کند</div>
+                                            </div>
+                                        </div>
+                                        <div class="rass-level" data-score="-5">
+                                            <div class="rass-score-pill sedated">-۵</div>
+                                            <div class="rass-level-content">
+                                                <div class="rass-level-title">بی‌هوشی</div>
+                                                <div class="rass-level-desc">بدون پاسخ به صدا یا تحریک فیزیکی</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="rass-result-box" id="rassResultBox" style="display:none;">
+                                    <div class="rass-result-score" id="rassResultScore"></div>
+                                    <div class="rass-result-label" id="rassResultLabel"></div>
+                                    <div class="rass-result-note" id="rassResultNote"></div>
+                                    <button class="gcs-reset-btn" id="rassResetBtn"><i class="fas fa-rotate-right"></i> شروع مجدد</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Braden Scale -->
+                        <div class="accordion-item">
+                            <button class="accordion-header" onclick="toggleAccordion(this)">
+                                <div class="accordion-icon-wrap" style="background:linear-gradient(135deg,#10b981,#0d9488)"><i class="fas fa-shield-heart"></i></div>
+                                <div class="accordion-title-wrap">
+                                    <span class="accordion-title">مقیاس برادن</span>
+                                    <span class="accordion-sub">Braden Scale — زخم فشاری</span>
+                                </div>
+                                <i class="fas fa-chevron-down accordion-chevron"></i>
+                            </button>
+                            <div class="accordion-body" id="bradenAccordionBody">
+                                <!-- Sensory Perception -->
+                                <div class="gcs-domain">
+                                    <div class="gcs-domain-header">
+                                        <div class="gcs-domain-icon" style="background:linear-gradient(135deg,#10b981,#0d9488)"><i class="fas fa-hand-dots"></i></div>
+                                        <div>
+                                            <div class="gcs-domain-title">حس درد — Sensory Perception</div>
+                                            <div class="gcs-domain-score">امتیاز: <span id="bradenSensoryScore">—</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="gcs-btn-group">
+                                        <button class="gcs-btn" data-braden="sensory" data-score="1"><span class="gcs-score-badge">۱</span><span class="gcs-btn-label">فاقد احساس کامل</span></button>
+                                        <button class="gcs-btn" data-braden="sensory" data-score="2"><span class="gcs-score-badge">۲</span><span class="gcs-btn-label">احساس بسیار محدود</span></button>
+                                        <button class="gcs-btn" data-braden="sensory" data-score="3"><span class="gcs-score-badge">۳</span><span class="gcs-btn-label">احساس نسبتاً محدود</span></button>
+                                        <button class="gcs-btn" data-braden="sensory" data-score="4"><span class="gcs-score-badge">۴</span><span class="gcs-btn-label">بدون محدودیت</span></button>
+                                    </div>
+                                </div>
+                                <!-- Moisture -->
+                                <div class="gcs-domain">
+                                    <div class="gcs-domain-header">
+                                        <div class="gcs-domain-icon" style="background:linear-gradient(135deg,#0ea5e9,#06b6d4)"><i class="fas fa-droplet"></i></div>
+                                        <div>
+                                            <div class="gcs-domain-title">رطوبت پوست — Moisture</div>
+                                            <div class="gcs-domain-score">امتیاز: <span id="bradenMoistureScore">—</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="gcs-btn-group">
+                                        <button class="gcs-btn" data-braden="moisture" data-score="1"><span class="gcs-score-badge">۱</span><span class="gcs-btn-label">مدام مرطوب</span></button>
+                                        <button class="gcs-btn" data-braden="moisture" data-score="2"><span class="gcs-score-badge">۲</span><span class="gcs-btn-label">اغلب مرطوب</span></button>
+                                        <button class="gcs-btn" data-braden="moisture" data-score="3"><span class="gcs-score-badge">۳</span><span class="gcs-btn-label">گاهی مرطوب</span></button>
+                                        <button class="gcs-btn" data-braden="moisture" data-score="4"><span class="gcs-score-badge">۴</span><span class="gcs-btn-label">به ندرت مرطوب</span></button>
+                                    </div>
+                                </div>
+                                <!-- Activity -->
+                                <div class="gcs-domain">
+                                    <div class="gcs-domain-header">
+                                        <div class="gcs-domain-icon" style="background:linear-gradient(135deg,#f97316,#fbbf24)"><i class="fas fa-person-walking"></i></div>
+                                        <div>
+                                            <div class="gcs-domain-title">فعالیت — Activity</div>
+                                            <div class="gcs-domain-score">امتیاز: <span id="bradenActivityScore">—</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="gcs-btn-group">
+                                        <button class="gcs-btn" data-braden="activity" data-score="1"><span class="gcs-score-badge">۱</span><span class="gcs-btn-label">بستری (Bedfast)</span></button>
+                                        <button class="gcs-btn" data-braden="activity" data-score="2"><span class="gcs-score-badge">۲</span><span class="gcs-btn-label">به صندلی محدود</span></button>
+                                        <button class="gcs-btn" data-braden="activity" data-score="3"><span class="gcs-score-badge">۳</span><span class="gcs-btn-label">گاهی راه می‌رود</span></button>
+                                        <button class="gcs-btn" data-braden="activity" data-score="4"><span class="gcs-score-badge">۴</span><span class="gcs-btn-label">راه می‌رود اغلب</span></button>
+                                    </div>
+                                </div>
+                                <!-- Mobility -->
+                                <div class="gcs-domain">
+                                    <div class="gcs-domain-header">
+                                        <div class="gcs-domain-icon" style="background:linear-gradient(135deg,#8b5cf6,#d946ef)"><i class="fas fa-arrows-up-down-left-right"></i></div>
+                                        <div>
+                                            <div class="gcs-domain-title">تحرک — Mobility</div>
+                                            <div class="gcs-domain-score">امتیاز: <span id="bradenMobilityScore">—</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="gcs-btn-group">
+                                        <button class="gcs-btn" data-braden="mobility" data-score="1"><span class="gcs-score-badge">۱</span><span class="gcs-btn-label">کاملاً بی‌حرکت</span></button>
+                                        <button class="gcs-btn" data-braden="mobility" data-score="2"><span class="gcs-score-badge">۲</span><span class="gcs-btn-label">بسیار محدود</span></button>
+                                        <button class="gcs-btn" data-braden="mobility" data-score="3"><span class="gcs-score-badge">۳</span><span class="gcs-btn-label">محدودیت اندک</span></button>
+                                        <button class="gcs-btn" data-braden="mobility" data-score="4"><span class="gcs-score-badge">۴</span><span class="gcs-btn-label">بدون محدودیت</span></button>
+                                    </div>
+                                </div>
+                                <!-- Nutrition -->
+                                <div class="gcs-domain">
+                                    <div class="gcs-domain-header">
+                                        <div class="gcs-domain-icon" style="background:linear-gradient(135deg,#ef4444,#f97316)"><i class="fas fa-utensils"></i></div>
+                                        <div>
+                                            <div class="gcs-domain-title">تغذیه — Nutrition</div>
+                                            <div class="gcs-domain-score">امتیاز: <span id="bradenNutritionScore">—</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="gcs-btn-group">
+                                        <button class="gcs-btn" data-braden="nutrition" data-score="1"><span class="gcs-score-badge">۱</span><span class="gcs-btn-label">بسیار ضعیف</span></button>
+                                        <button class="gcs-btn" data-braden="nutrition" data-score="2"><span class="gcs-score-badge">۲</span><span class="gcs-btn-label">ناکافی</span></button>
+                                        <button class="gcs-btn" data-braden="nutrition" data-score="3"><span class="gcs-score-badge">۳</span><span class="gcs-btn-label">کافی</span></button>
+                                        <button class="gcs-btn" data-braden="nutrition" data-score="4"><span class="gcs-score-badge">۴</span><span class="gcs-btn-label">عالی</span></button>
+                                    </div>
+                                </div>
+                                <!-- Friction & Shear -->
+                                <div class="gcs-domain">
+                                    <div class="gcs-domain-header">
+                                        <div class="gcs-domain-icon" style="background:linear-gradient(135deg,#64748b,#475569)"><i class="fas fa-compress"></i></div>
+                                        <div>
+                                            <div class="gcs-domain-title">اصطکاک و کشش — Friction & Shear</div>
+                                            <div class="gcs-domain-score">امتیاز: <span id="bradenFrictionScore">—</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="gcs-btn-group">
+                                        <button class="gcs-btn" data-braden="friction" data-score="1"><span class="gcs-score-badge">۱</span><span class="gcs-btn-label">مشکل دارد</span></button>
+                                        <button class="gcs-btn" data-braden="friction" data-score="2"><span class="gcs-score-badge">۲</span><span class="gcs-btn-label">مشکل احتمالی</span></button>
+                                        <button class="gcs-btn" data-braden="friction" data-score="3"><span class="gcs-score-badge">۳</span><span class="gcs-btn-label">مشکل ندارد</span></button>
+                                    </div>
+                                </div>
+                                <div class="gcs-result-box" id="bradenResultBox" style="display:none;">
+                                    <div class="gcs-total-row">
+                                        <div class="gcs-total-label">امتیاز کل Braden</div>
+                                        <div class="gcs-total-score" id="bradenTotalScore">—</div>
+                                    </div>
+                                    <div class="gcs-severity-badge" id="bradenSeverityBadge"></div>
+                                    <div class="gcs-notes" id="bradenNotes"></div>
+                                    <button class="gcs-reset-btn" id="bradenResetBtn"><i class="fas fa-rotate-right"></i> شروع مجدد</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Morse Fall Scale -->
+                        <div class="accordion-item">
+                            <button class="accordion-header" onclick="toggleAccordion(this)">
+                                <div class="accordion-icon-wrap" style="background:linear-gradient(135deg,#f59e0b,#ef4444)"><i class="fas fa-person-falling"></i></div>
+                                <div class="accordion-title-wrap">
+                                    <span class="accordion-title">مقیاس سقوط مورس</span>
+                                    <span class="accordion-sub">Morse Fall Scale — MFS</span>
+                                </div>
+                                <i class="fas fa-chevron-down accordion-chevron"></i>
+                            </button>
+                            <div class="accordion-body" id="morseAccordionBody">
+                                <!-- History of Falling -->
+                                <div class="gcs-domain">
+                                    <div class="gcs-domain-header">
+                                        <div class="gcs-domain-icon" style="background:linear-gradient(135deg,#f59e0b,#ef4444)"><i class="fas fa-clock-rotate-left"></i></div>
+                                        <div>
+                                            <div class="gcs-domain-title">سابقه افتادن — History of Falls</div>
+                                            <div class="gcs-domain-score">امتیاز: <span id="morseFallHistoryScore">—</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="gcs-btn-group">
+                                        <button class="gcs-btn" data-morse="fallHistory" data-score="0"><span class="gcs-score-badge">۰</span><span class="gcs-btn-label">خیر</span></button>
+                                        <button class="gcs-btn" data-morse="fallHistory" data-score="25"><span class="gcs-score-badge">۲۵</span><span class="gcs-btn-label">بله</span></button>
+                                    </div>
+                                </div>
+                                <!-- Secondary Diagnosis -->
+                                <div class="gcs-domain">
+                                    <div class="gcs-domain-header">
+                                        <div class="gcs-domain-icon" style="background:linear-gradient(135deg,#8b5cf6,#6366f1)"><i class="fas fa-file-medical"></i></div>
+                                        <div>
+                                            <div class="gcs-domain-title">تشخیص ثانویه — Secondary Diagnosis</div>
+                                            <div class="gcs-domain-score">امتیاز: <span id="morseSecDiagScore">—</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="gcs-btn-group">
+                                        <button class="gcs-btn" data-morse="secDiag" data-score="0"><span class="gcs-score-badge">۰</span><span class="gcs-btn-label">خیر</span></button>
+                                        <button class="gcs-btn" data-morse="secDiag" data-score="15"><span class="gcs-score-badge">۱۵</span><span class="gcs-btn-label">بله</span></button>
+                                    </div>
+                                </div>
+                                <!-- Ambulatory Aid -->
+                                <div class="gcs-domain">
+                                    <div class="gcs-domain-header">
+                                        <div class="gcs-domain-icon" style="background:linear-gradient(135deg,#0ea5e9,#06b6d4)"><i class="fas fa-crutch"></i></div>
+                                        <div>
+                                            <div class="gcs-domain-title">وسیله کمکی — Ambulatory Aid</div>
+                                            <div class="gcs-domain-score">امتیاز: <span id="morseAidScore">—</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="gcs-btn-group">
+                                        <button class="gcs-btn" data-morse="aid" data-score="0"><span class="gcs-score-badge">۰</span><span class="gcs-btn-label">بی‌نیاز / استراحت مطلق</span></button>
+                                        <button class="gcs-btn" data-morse="aid" data-score="15"><span class="gcs-score-badge">۱۵</span><span class="gcs-btn-label">عصا / واکر</span></button>
+                                        <button class="gcs-btn" data-morse="aid" data-score="30"><span class="gcs-score-badge">۳۰</span><span class="gcs-btn-label">به اشیاء تکیه می‌کند</span></button>
+                                    </div>
+                                </div>
+                                <!-- IV / Heparin Lock -->
+                                <div class="gcs-domain">
+                                    <div class="gcs-domain-header">
+                                        <div class="gcs-domain-icon" style="background:linear-gradient(135deg,#10b981,#0d9488)"><i class="fas fa-syringe"></i></div>
+                                        <div>
+                                            <div class="gcs-domain-title">سرم وریدی / هپارین — IV Access</div>
+                                            <div class="gcs-domain-score">امتیاز: <span id="morseIVScore">—</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="gcs-btn-group">
+                                        <button class="gcs-btn" data-morse="iv" data-score="0"><span class="gcs-score-badge">۰</span><span class="gcs-btn-label">خیر</span></button>
+                                        <button class="gcs-btn" data-morse="iv" data-score="20"><span class="gcs-score-badge">۲۰</span><span class="gcs-btn-label">بله</span></button>
+                                    </div>
+                                </div>
+                                <!-- Gait -->
+                                <div class="gcs-domain">
+                                    <div class="gcs-domain-header">
+                                        <div class="gcs-domain-icon" style="background:linear-gradient(135deg,#f97316,#fbbf24)"><i class="fas fa-shoe-prints"></i></div>
+                                        <div>
+                                            <div class="gcs-domain-title">راه رفتن — Gait</div>
+                                            <div class="gcs-domain-score">امتیاز: <span id="morseGaitScore">—</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="gcs-btn-group">
+                                        <button class="gcs-btn" data-morse="gait" data-score="0"><span class="gcs-score-badge">۰</span><span class="gcs-btn-label">طبیعی / بستری / ویلچر</span></button>
+                                        <button class="gcs-btn" data-morse="gait" data-score="10"><span class="gcs-score-badge">۱۰</span><span class="gcs-btn-label">ضعیف</span></button>
+                                        <button class="gcs-btn" data-morse="gait" data-score="20"><span class="gcs-score-badge">۲۰</span><span class="gcs-btn-label">مختل / ناپایدار</span></button>
+                                    </div>
+                                </div>
+                                <!-- Mental Status -->
+                                <div class="gcs-domain">
+                                    <div class="gcs-domain-header">
+                                        <div class="gcs-domain-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)"><i class="fas fa-brain"></i></div>
+                                        <div>
+                                            <div class="gcs-domain-title">وضعیت ذهنی — Mental Status</div>
+                                            <div class="gcs-domain-score">امتیاز: <span id="morseMentalScore">—</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="gcs-btn-group">
+                                        <button class="gcs-btn" data-morse="mental" data-score="0"><span class="gcs-score-badge">۰</span><span class="gcs-btn-label">توانایی خود را درست ارزیابی می‌کند</span></button>
+                                        <button class="gcs-btn" data-morse="mental" data-score="15"><span class="gcs-score-badge">۱۵</span><span class="gcs-btn-label">توانایی خود را بیش از حد تخمین می‌زند</span></button>
+                                    </div>
+                                </div>
+                                <div class="gcs-result-box" id="morseResultBox" style="display:none;">
+                                    <div class="gcs-total-row">
+                                        <div class="gcs-total-label">امتیاز کل Morse</div>
+                                        <div class="gcs-total-score" id="morseTotalScore">—</div>
+                                    </div>
+                                    <div class="gcs-severity-badge" id="morseSeverityBadge"></div>
+                                    <div class="gcs-notes" id="morseNotes"></div>
+                                    <button class="gcs-reset-btn" id="morseResetBtn"><i class="fas fa-rotate-right"></i> شروع مجدد</button>
                                 </div>
                             </div>
                         </div>
