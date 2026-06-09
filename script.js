@@ -766,6 +766,9 @@ function initializeApp() {
     setupTabBarMeasurement();
     setupGCS();
     setupBurns();
+    setupRASS();
+    setupBraden();
+    setupMorse();
     setupThemePicker();
     setupUpdateDetection();
     setupThemeModeListener();
@@ -1041,8 +1044,9 @@ function setupCustomAmountUI(drug) {
 
 function getAmountPresets(drug, unit) {
     const perDrug = {
+        heparin:       [10000, 25000],
+        lasix:         [50, 100],
         insulin:       [20, 25, 50, 100],
-        furosemide:    [50, 100],
         fentanyl:      [500, 1000],
         pantoprazole:  [80],
         tng:           [5, 10, 20],
@@ -1382,6 +1386,7 @@ function setupEventListeners() {
     const weightToggleRow = document.getElementById('weightToggleRow');
     if (weightToggleRow) {
         weightToggleRow.addEventListener('click', (e) => {
+            if (e.target.closest('.help-icon')) return; // let help popover handle it
             // Prevent toggling twice if the click came from the toggle itself
             if (e.target.closest('.ios-toggle')) return;
             haptic(25);
@@ -1498,7 +1503,8 @@ function setupEventListeners() {
     // Reverse mode toggle row
     const reverseRow = document.querySelector('.reverse-toggle-row');
     if (reverseRow) {
-        reverseRow.addEventListener('click', () => {
+        reverseRow.addEventListener('click', (e) => {
+            if (e.target.closest('.help-icon')) return;
             haptic(30);
             AppState.reverseMode = !AppState.reverseMode;
             if (AppState.reverseMode && !localStorage.getItem('reverseTooltipSeen')) {
@@ -3579,4 +3585,214 @@ function setupHelpPopovers() {
     // Close on scroll or resize
     document.addEventListener('scroll', hidePopover, { passive: true });
     window.addEventListener('resize', hidePopover, { passive: true });
+}
+
+// ============================================
+// RASS — Richmond Agitation-Sedation Scale
+// ============================================
+function setupRASS() {
+    const levels = document.querySelectorAll('#rassAccordionBody .rass-level');
+    levels.forEach(level => {
+        level.addEventListener('click', () => {
+            haptic(25);
+            levels.forEach(l => l.classList.remove('selected'));
+            level.classList.add('selected');
+            const score = parseInt(level.dataset.score);
+            updateRASS(score);
+        });
+    });
+    const resetBtn = document.getElementById('rassResetBtn');
+    if (resetBtn) resetBtn.addEventListener('click', resetRASS);
+}
+
+function updateRASS(score) {
+    const box = document.getElementById('rassResultBox');
+    const scoreEl = document.getElementById('rassResultScore');
+    const labelEl = document.getElementById('rassResultLabel');
+    const noteEl = document.getElementById('rassResultNote');
+
+    const data = {
+        4:  { label: 'خشونت آشکار', color: '#ef4444', note: '⚠️ نیاز فوری به مداخله — خطر برای کادر درمان. داروی آرام‌بخش سریع الاثر تجویز شود.' },
+        3:  { label: 'بسیار آژیته', color: '#f97316', note: '⚠️ ارزیابی علت آژیتاسیون (درد، هیپوکسی، دلیریوم). مداخله دارویی احتمالاً لازم است.' },
+        2:  { label: 'آژیته', color: '#f97316', note: 'بررسی علل قابل درمان (درد، احتباس ادراری). تنظیم دوز آرام‌بخش را در نظر بگیرید.' },
+        1:  { label: 'بی‌قرار', color: '#fbbf24', note: 'پایش مداوم. بررسی علل محیطی نگرانی بیمار.' },
+        0:  { label: 'هوشیار و آرام', color: '#22c55e', note: '✓ سطح هدف آرام‌بخشی در ICU. ادامه پایش.' },
+        '-1': { label: 'خواب‌آلود', color: '#0ea5e9', note: 'در مرز قابل قبول. پایش پاسخ به صدا.' },
+        '-2': { label: 'سداسیون خفیف', color: '#6366f1', note: 'هدف قابل قبول برای بیماران تحت ونتیلاتور. بررسی روزانه برای کاهش دوز.' },
+        '-3': { label: 'سداسیون متوسط', color: '#8b5cf6', note: 'بررسی نیاز بالینی. در صورت امکان کاهش دوز را در نظر بگیرید.' },
+        '-4': { label: 'سداسیون عمیق', color: '#a855f7', note: '⚠️ فقط در موارد خاص (ICP بالا، برونکواسپاسم شدید). بررسی روزانه ضروری است.' },
+        '-5': { label: 'بی‌هوشی', color: '#7c3aed', note: '⚠️ سداسیون بسیار عمیق. ارزیابی ضروری بودن این سطح. خطر عوارض بالا است.' },
+    };
+
+    const key = score.toString();
+    const d = data[key];
+    if (!d) return;
+
+    if (scoreEl) {
+        scoreEl.textContent = score > 0 ? `+${score}` : score;
+        scoreEl.style.color = d.color;
+    }
+    if (labelEl) labelEl.textContent = d.label;
+    if (noteEl) noteEl.textContent = d.note;
+    if (box) {
+        box.style.display = 'block';
+        box.style.borderColor = d.color + '40';
+        refreshAccordion(box);
+        setTimeout(() => box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
+    }
+    haptic(40);
+}
+
+function resetRASS() {
+    document.querySelectorAll('#rassAccordionBody .rass-level').forEach(l => l.classList.remove('selected'));
+    const box = document.getElementById('rassResultBox');
+    if (box) box.style.display = 'none';
+    haptic(30);
+}
+
+// ============================================
+// BRADEN SCALE
+// ============================================
+const BRADEN_STATE = { sensory: null, moisture: null, activity: null, mobility: null, nutrition: null, friction: null };
+const BRADEN_SCORE_IDS = {
+    sensory: 'bradenSensoryScore', moisture: 'bradenMoistureScore',
+    activity: 'bradenActivityScore', mobility: 'bradenMobilityScore',
+    nutrition: 'bradenNutritionScore', friction: 'bradenFrictionScore'
+};
+
+function setupBraden() {
+    document.querySelectorAll('#bradenAccordionBody .gcs-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            haptic(25);
+            const domain = btn.dataset.braden;
+            const score = parseInt(btn.dataset.score);
+            btn.closest('.gcs-btn-group').querySelectorAll('.gcs-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            BRADEN_STATE[domain] = score;
+            const el = document.getElementById(BRADEN_SCORE_IDS[domain]);
+            if (el) el.textContent = score;
+            updateBraden();
+        });
+    });
+    const resetBtn = document.getElementById('bradenResetBtn');
+    if (resetBtn) resetBtn.addEventListener('click', resetBraden);
+}
+
+function updateBraden() {
+    const vals = Object.values(BRADEN_STATE);
+    if (vals.some(v => v === null)) return;
+    const total = vals.reduce((a, b) => a + b, 0);
+
+    const totalEl = document.getElementById('bradenTotalScore');
+    const badgeEl = document.getElementById('bradenSeverityBadge');
+    const notesEl = document.getElementById('bradenNotes');
+    const box = document.getElementById('bradenResultBox');
+
+    if (totalEl) totalEl.textContent = total;
+
+    let severity, badgeClass, notes;
+    if (total >= 19) {
+        severity = 'ریسک ندارد';
+        badgeClass = 'gcs-badge-mild';
+        notes = ['پوست سالم است.', 'آموزش پیشگیری به بیمار و خانواده توصیه می‌شود.'];
+    } else if (total >= 15) {
+        severity = 'ریسک خفیف';
+        badgeClass = 'gcs-badge-mild';
+        notes = ['تغییر وضعیت هر ۲ ساعت.', 'مراقبت از پوست و تغذیه مناسب.'];
+    } else if (total >= 13) {
+        severity = 'ریسک متوسط';
+        badgeClass = 'gcs-badge-moderate';
+        notes = ['تغییر وضعیت هر ۱–۲ ساعت.', 'استفاده از تشک فشارزدا توصیه می‌شود.', 'ارزیابی روزانه پوست.'];
+    } else if (total >= 10) {
+        severity = 'ریسک بالا';
+        badgeClass = 'gcs-badge-severe';
+        notes = ['⚠️ ریسک بالای زخم فشاری.', 'تغییر وضعیت هر ۱ ساعت.', 'تشک تخصصی پیشگیری از زخم ضروری است.', 'بررسی و مستندسازی وضعیت پوست در هر شیفت.'];
+    } else {
+        severity = 'ریسک بسیار بالا';
+        badgeClass = 'gcs-badge-severe';
+        notes = ['🚨 ریسک بسیار بالا.', 'پروتکل پیشگیری فشرده فعال شود.', 'تشک تخصصی + تغییر وضعیت هر ۱ ساعت.', 'مشاوره تیم زخم و پوست.', 'بررسی تغذیه و هیدراسیون فوری.'];
+    }
+
+    if (badgeEl) { badgeEl.textContent = `خطر: ${severity}`; badgeEl.className = `gcs-severity-badge ${badgeClass}`; }
+    if (notesEl) notesEl.innerHTML = notes.map(n => `<div class="gcs-note-item"><i class="fas fa-circle-info"></i><span>${n}</span></div>`).join('');
+    if (box) { box.style.display = 'block'; refreshAccordion(box); setTimeout(() => box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150); }
+    haptic(40);
+}
+
+function resetBraden() {
+    Object.keys(BRADEN_STATE).forEach(k => BRADEN_STATE[k] = null);
+    document.querySelectorAll('#bradenAccordionBody .gcs-btn').forEach(b => b.classList.remove('active'));
+    Object.values(BRADEN_SCORE_IDS).forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '—'; });
+    const box = document.getElementById('bradenResultBox');
+    if (box) box.style.display = 'none';
+    haptic(30);
+}
+
+// ============================================
+// MORSE FALL SCALE
+// ============================================
+const MORSE_STATE = { fallHistory: null, secDiag: null, aid: null, iv: null, gait: null, mental: null };
+const MORSE_SCORE_IDS = {
+    fallHistory: 'morseFallHistoryScore', secDiag: 'morseSecDiagScore',
+    aid: 'morseAidScore', iv: 'morseIVScore', gait: 'morseGaitScore', mental: 'morseMentalScore'
+};
+
+function setupMorse() {
+    document.querySelectorAll('#morseAccordionBody .gcs-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            haptic(25);
+            const domain = btn.dataset.morse;
+            const score = parseInt(btn.dataset.score);
+            btn.closest('.gcs-btn-group').querySelectorAll('.gcs-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            MORSE_STATE[domain] = score;
+            const el = document.getElementById(MORSE_SCORE_IDS[domain]);
+            if (el) el.textContent = score;
+            updateMorse();
+        });
+    });
+    const resetBtn = document.getElementById('morseResetBtn');
+    if (resetBtn) resetBtn.addEventListener('click', resetMorse);
+}
+
+function updateMorse() {
+    const vals = Object.values(MORSE_STATE);
+    if (vals.some(v => v === null)) return;
+    const total = vals.reduce((a, b) => a + b, 0);
+
+    const totalEl = document.getElementById('morseTotalScore');
+    const badgeEl = document.getElementById('morseSeverityBadge');
+    const notesEl = document.getElementById('morseNotes');
+    const box = document.getElementById('morseResultBox');
+
+    if (totalEl) totalEl.textContent = total;
+
+    let severity, badgeClass, notes;
+    if (total < 25) {
+        severity = 'ریسک کم';
+        badgeClass = 'gcs-badge-mild';
+        notes = ['ریسک سقوط پایین.', 'مراقبت استاندارد ایمنی کافی است.'];
+    } else if (total <= 50) {
+        severity = 'ریسک متوسط';
+        badgeClass = 'gcs-badge-moderate';
+        notes = ['⚠️ ریسک متوسط سقوط.', 'پروتکل پیشگیری از سقوط فعال شود.', 'آموزش به بیمار و خانواده.', 'نرده تخت بالا باشد.'];
+    } else {
+        severity = 'ریسک بالا';
+        badgeClass = 'gcs-badge-severe';
+        notes = ['🚨 ریسک بالای سقوط.', 'پروتکل پیشگیری فشرده فعال شود.', 'نظارت مداوم یا ناظر بالینی.', 'دستبند قرمز ریسک سقوط نصب شود.', 'محیط بیمار ایمن‌سازی شود (کفپوش، نور کافی).', 'مرور داروهای موثر بر تعادل (آرام‌بخش، ادرارآور).'];
+    }
+
+    if (badgeEl) { badgeEl.textContent = `خطر: ${severity}`; badgeEl.className = `gcs-severity-badge ${badgeClass}`; }
+    if (notesEl) notesEl.innerHTML = notes.map(n => `<div class="gcs-note-item"><i class="fas fa-circle-info"></i><span>${n}</span></div>`).join('');
+    if (box) { box.style.display = 'block'; refreshAccordion(box); setTimeout(() => box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150); }
+    haptic(40);
+}
+
+function resetMorse() {
+    Object.keys(MORSE_STATE).forEach(k => MORSE_STATE[k] = null);
+    document.querySelectorAll('#morseAccordionBody .gcs-btn').forEach(b => b.classList.remove('active'));
+    Object.values(MORSE_SCORE_IDS).forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '—'; });
+    const box = document.getElementById('morseResultBox');
+    if (box) box.style.display = 'none';
+    haptic(30);
 }
