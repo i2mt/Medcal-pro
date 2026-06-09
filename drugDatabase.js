@@ -1,4 +1,16 @@
 // ============================================
+// FoxiMed — Medical Calculator PWA
+// © 2026 Mohammad Mahdi Taghavi. All rights reserved.
+//
+// License: CC BY-NC 4.0
+// You may share and adapt this work for non-commercial purposes
+// with appropriate credit. Commercial use is prohibited.
+// https://creativecommons.org/licenses/by-nc/4.0/
+//
+// Contact: https://t.me/i_2mt
+// ============================================
+
+// ============================================
 // ENHANCED DRUG DATABASE - PROFESSIONAL MEDICAL EDITION
 // ============================================
 const drugDatabase = {
