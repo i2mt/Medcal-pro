@@ -740,7 +740,8 @@ function initializeApp() {
     setupUpdateDetection();
     setupThemeModeListener();
     setupUserName();
-    showGreetingBanner();
+    // Delay banner until loading screen is gone (~2.5s for steps + 550ms fade)
+    setTimeout(showGreetingBanner, 3200);
 }
 
 function setupMobileOptimizations() {
