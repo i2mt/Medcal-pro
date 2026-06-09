@@ -759,6 +759,7 @@ function initializeApp() {
     setupThemeModeListener();
     setupUserName();
     setTimeout(showGreetingBanner, 3200);
+    setupHelpPopovers();
 }
 
 function setupMobileOptimizations() {
@@ -3487,4 +3488,78 @@ function setupUserName() {
             }
         }
     });
+}
+
+// ============================================
+// CONTEXTUAL HELP POPOVERS
+// ============================================
+const HELP_TEXTS = {
+    method: 'روش تزریق دارو را مشخص می‌کند.\n«پمپ سرنگ» برای حجم‌های کم (۱۰–۵۰ سی‌سی) و «پمپ انفوزیون» برای حجم‌های بیشتر (۱۰۰–۱۰۰۰ سی‌سی) استفاده می‌شود. انتخاب روش، گزینه‌های حجم را تغییر می‌دهد.',
+    volume: 'حجم کل محلولی که دارو در آن حل می‌شود را وارد کنید (سی‌سی).\nمثلاً اگر ۵۰ سی‌سی انتخاب کنید، دارو در ۵۰ سی‌سی سرم حل شده و غلظت و سرعت پمپ بر این اساس محاسبه می‌شود.',
+    ampoule: 'تعداد آمپول یا ویال دارویی که به محلول اضافه می‌کنید را مشخص کنید.\nبرای انسولین و برخی داروها می‌توانید مقدار دقیق واحد یا میلی‌گرم اضافه‌شده را مستقیماً وارد کنید.',
+    dose: 'دوز درخواستی پزشک را اینجا وارد کنید.\nواحد دوز بسته به دارو متفاوت است (مثلاً واحد/ساعت، میکروگرم/کیلوگرم/دقیقه). پس از وارد کردن دوز، دکمه محاسبه را بزنید.',
+    weight: 'وقتی این گزینه فعال است، دوز بر اساس وزن بیمار محاسبه می‌شود.\nمثلاً اگر دوز ۰.۱ واحد/کیلوگرم/ساعت باشد و وزن بیمار ۷۰ کیلوگرم، دوز کل ۷ واحد/ساعت خواهد بود.',
+    reverse: 'با فعال کردن این گزینه، به جای وارد کردن دوز، سرعت پمپ (سی‌سی/ساعت) را وارد می‌کنید و دوز دریافتی بیمار محاسبه می‌شود.',
+};
+
+function setupHelpPopovers() {
+    const popover = document.getElementById('helpPopover');
+    const popoverText = document.getElementById('helpPopoverText');
+    if (!popover || !popoverText) return;
+
+    let activeBtn = null;
+
+    function showPopover(btn) {
+        const key = btn.dataset.help;
+        const text = HELP_TEXTS[key];
+        if (!text) return;
+
+        // Set text (support \n as line breaks)
+        popoverText.innerHTML = text.replace(/\n/g, '<br>');
+
+        // Position: below the button
+        popover.style.display = 'block';
+        const btnRect = btn.getBoundingClientRect();
+        const popRect = popover.getBoundingClientRect();
+        const scrollY = window.scrollY || 0;
+
+        let top = btnRect.bottom + scrollY + 8;
+        let left = btnRect.left - popRect.width / 2 + btnRect.width / 2;
+
+        // Clamp to screen edges
+        const margin = 12;
+        left = Math.max(margin, Math.min(left, window.innerWidth - popRect.width - margin));
+
+        popover.style.top = top + 'px';
+        popover.style.left = left + 'px';
+
+        // Arrow horizontal position relative to popover
+        const arrowLeft = (btnRect.left + btnRect.width / 2) - left;
+        popover.querySelector('.help-popover-arrow').style.right = 'auto';
+        popover.querySelector('.help-popover-arrow').style.left = Math.max(12, arrowLeft) + 'px';
+
+        activeBtn = btn;
+        btn.classList.add('active');
+    }
+
+    function hidePopover() {
+        popover.style.display = 'none';
+        if (activeBtn) { activeBtn.classList.remove('active'); activeBtn = null; }
+    }
+
+    // Delegate — works for dynamically added buttons too
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.help-icon');
+        if (btn) {
+            e.stopPropagation();
+            if (activeBtn === btn) { hidePopover(); return; }
+            showPopover(btn);
+            return;
+        }
+        if (!popover.contains(e.target)) hidePopover();
+    });
+
+    // Close on scroll or resize
+    document.addEventListener('scroll', hidePopover, { passive: true });
+    window.addEventListener('resize', hidePopover, { passive: true });
 }
