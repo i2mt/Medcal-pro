@@ -489,6 +489,8 @@ const DOM = {
     ampouleCounterRow: document.getElementById('ampouleCounterRow'),
     customAmountToggle: document.getElementById('customAmountToggle'),
     customAmountToggleRow: document.getElementById('customAmountToggleRow'),
+    customAmountIosToggle: document.getElementById('customAmountIosToggle'),
+    customAmountToggleClickRow: document.getElementById('customAmountToggleClickRow'),
     customAmountToggleLabel: document.getElementById('customAmountToggleLabel'),
     customAmountInputRow: document.getElementById('customAmountInputRow'),
     customAmountInput: document.getElementById('customAmountInput'),
@@ -976,13 +978,10 @@ function setupCustomAmountUI(drug) {
     AppState.useCustomDrugAmount = isInsulin;
     AppState.customDrugAmount = null;
 
-    if (!DOM.customAmountToggle) return;
-
     if (DOM.customAmountUnit) DOM.customAmountUnit.textContent = unit;
-
     if (DOM.customAmountInput) {
         DOM.customAmountInput.value = '';
-        DOM.customAmountInput.placeholder = isInsulin ? 'مثلاً: ۵۰' : `مقدار به ${unit}...`;
+        DOM.customAmountInput.placeholder = isInsulin ? 'واحد اضافه‌شده...' : `مقدار به ${unit}...`;
     }
 
     // Build preset chips
@@ -1008,39 +1007,55 @@ function setupCustomAmountUI(drug) {
         DOM.customAmountPresets.style.display = presets.length ? 'flex' : 'none';
     }
 
+    function setCustomOn(on) {
+        AppState.useCustomDrugAmount = on;
+        AppState.customDrugAmount = null;
+        if (DOM.customAmountToggle) DOM.customAmountToggle.checked = on;
+        if (DOM.customAmountIosToggle) DOM.customAmountIosToggle.classList.toggle('on', on);
+        if (DOM.customAmountInputRow) DOM.customAmountInputRow.style.display = on ? 'flex' : 'none';
+        if (!isInsulin) {
+            if (DOM.ampouleCounterRow) DOM.ampouleCounterRow.classList.toggle('ampoule-greyed', on);
+            if (DOM.ampouleInfo) DOM.ampouleInfo.classList.toggle('ampoule-greyed', on);
+        }
+        if (!on && DOM.customAmountInput) DOM.customAmountInput.value = '';
+        if (!on && DOM.customAmountPresets) {
+            DOM.customAmountPresets.querySelectorAll('.amount-preset-chip')
+                .forEach(c => c.classList.remove('active'));
+        }
+        clearResults();
+    }
+
     if (isInsulin) {
+        // Insulin: hide toggle row entirely, always show input
         if (DOM.customAmountToggleRow) DOM.customAmountToggleRow.style.display = 'none';
         if (DOM.ampouleCounterRow) DOM.ampouleCounterRow.style.display = 'none';
         if (DOM.ampouleInfo) DOM.ampouleInfo.style.display = 'none';
         if (DOM.customAmountInputRow) DOM.customAmountInputRow.style.display = 'flex';
     } else {
-        if (DOM.customAmountToggleRow) DOM.customAmountToggleRow.style.display = 'flex';
+        if (DOM.customAmountToggleRow) DOM.customAmountToggleRow.style.display = 'block';
         if (DOM.customAmountToggleLabel) DOM.customAmountToggleLabel.textContent = 'مقدار دلخواه دارو';
         if (DOM.ampouleCounterRow) { DOM.ampouleCounterRow.style.display = 'flex'; DOM.ampouleCounterRow.classList.remove('ampoule-greyed'); }
         if (DOM.ampouleInfo) { DOM.ampouleInfo.style.display = ''; DOM.ampouleInfo.classList.remove('ampoule-greyed'); }
         if (DOM.customAmountInputRow) DOM.customAmountInputRow.style.display = 'none';
 
-        const newToggle = DOM.customAmountToggle.cloneNode(true);
-        DOM.customAmountToggle.parentNode.replaceChild(newToggle, DOM.customAmountToggle);
-        DOM.customAmountToggle = newToggle;
-        newToggle.checked = false;
-
-        newToggle.addEventListener('change', function () {
-            AppState.useCustomDrugAmount = this.checked;
-            AppState.customDrugAmount = null;
-            if (DOM.customAmountInput) DOM.customAmountInput.value = '';
-            if (DOM.customAmountPresets) {
-                DOM.customAmountPresets.querySelectorAll('.amount-preset-chip')
-                    .forEach(c => c.classList.remove('active'));
-            }
-            if (DOM.customAmountInputRow) DOM.customAmountInputRow.style.display = this.checked ? 'flex' : 'none';
-            // Grey out ampoule counter instead of hiding it
-            if (DOM.ampouleCounterRow) DOM.ampouleCounterRow.classList.toggle('ampoule-greyed', this.checked);
-            if (DOM.ampouleInfo) DOM.ampouleInfo.classList.toggle('ampoule-greyed', this.checked);
-            clearResults();
-        });
+        // Wire iOS toggle row — full row tap
+        const clickRow = DOM.customAmountToggleClickRow;
+        if (clickRow) {
+            const newRow = clickRow.cloneNode(true);
+            clickRow.parentNode.replaceChild(newRow, clickRow);
+            DOM.customAmountToggleClickRow = newRow;
+            DOM.customAmountIosToggle = newRow.querySelector('.ios-toggle');
+            DOM.customAmountToggle = newRow.querySelector('input[type=checkbox]');
+            newRow.addEventListener('click', (e) => {
+                if (e.target.closest('.help-icon')) return;
+                haptic(25);
+                setCustomOn(!AppState.useCustomDrugAmount);
+            });
+        }
+        setCustomOn(false);
     }
 }
+
 
 function getAmountPresets(drug, unit) {
     const perDrug = {
@@ -1647,94 +1662,93 @@ function createManualCalculationContent() {
     if (!manualSection) return;
     manualSection.innerHTML = `
         <div class="manual-header">
-            <h3><i class="fas fa-edit"></i> محاسبه دستی دارو</h3>
+            <h3><i class="fas fa-calculator"></i> محاسبه دستی دارو</h3>
             <button class="icon-btn" id="closeManualBtn"><i class="fas fa-times"></i></button>
         </div>
         <div class="manual-controls">
-            <div class="control-group">
-                <label><i class="fas fa-pills"></i> نام دارو (اختیاری)</label>
-                <input type="text" id="manualDrugName" placeholder="نام دارو را وارد کنید" style="text-align: right; direction: rtl;">
-            </div>
+
+            <!-- Step 1: Method -->
             <div class="control-group">
                 <label><i class="fas fa-infinity"></i> روش تزریق</label>
                 <div class="method-selector-compact">
-                    <button class="method-btn-compact active" data-method="syringe"><i class="fas fa-syringe"></i> <span>پمپ سرنگ</span></button>
-                    <button class="method-btn-compact" data-method="infusion"><i class="fas fa-pump-medical"></i> <span>پمپ انفوزیون</span></button>
+                    <button class="method-btn-compact gradient active" data-method="syringe"><i class="fas fa-syringe"></i> <span>پمپ سرنگ</span></button>
+                    <button class="method-btn-compact gradient" data-method="infusion"><i class="fas fa-pump-medical"></i> <span>پمپ انفوزیون</span></button>
                 </div>
             </div>
-            <div class="manual-inputs-grid">
-                <div class="control-group">
-                    <label><i class="fas fa-vial"></i> قدرت آمپول</label>
-                    <div class="manual-input-with-unit">
-                        <input type="number" id="manualStrength" placeholder="0" step="0.01" min="0.01" value="5000" inputmode="decimal" style="text-align: center;">
-                        <select id="manualStrengthUnit">
-                            <option value="units">واحد</option>
-                            <option value="mg">میلی‌گرم</option>
-                            <option value="mcg">میکروگرم</option>
-                            <option value="g">گرم</option>
-                        </select>
-                    </div>
+
+            <!-- Step 2: Solution volume -->
+            <div class="control-group">
+                <label><i class="fas fa-flask"></i> حجم محلول (سی‌سی)</label>
+                <div class="manual-volume-presets" id="manualVolumePresets">
+                    <button class="volume-preset-btn" data-vol="10"><span class="number">10</span><span class="unit-text">cc</span></button>
+                    <button class="volume-preset-btn" data-vol="20"><span class="number">20</span><span class="unit-text">cc</span></button>
+                    <button class="volume-preset-btn active" data-vol="50"><span class="number">50</span><span class="unit-text">cc</span></button>
+                    <button class="volume-preset-btn" data-vol="100"><span class="number">100</span><span class="unit-text">cc</span></button>
+                    <button class="volume-preset-btn" data-vol="250"><span class="number">250</span><span class="unit-text">cc</span></button>
+                    <button class="volume-preset-btn" data-vol="500"><span class="number">500</span><span class="unit-text">cc</span></button>
+                    <button class="volume-preset-btn" data-vol="custom"><span class="custom-text">سایر</span></button>
                 </div>
-                <div class="control-group">
-                    <label><i class="fas fa-vial"></i> حجم آمپول</label>
-                    <div class="manual-input-with-unit">
-                        <input type="number" id="manualVialVolume" placeholder="0" step="0.1" min="0.1" value="1" inputmode="decimal" style="text-align: center;">
-                        <span class="unit">میلی‌لیتر</span>
-                    </div>
-                </div>
-                <div class="control-group">
-                    <label><i class="fas fa-syringe"></i> تعداد آمپول</label>
-                    <div class="ampoule-control-enhanced">
-                        <button class="ampoule-btn-enhanced" id="manualDecreaseAmpoule"><i class="fas fa-minus"></i></button>
-                        <div class="ampoule-count-enhanced"><span id="manualAmpouleCount">1</span><small>عدد</small></div>
-                        <button class="ampoule-btn-enhanced" id="manualIncreaseAmpoule"><i class="fas fa-plus"></i></button>
-                    </div>
-                </div>
-                <div class="control-group">
-                    <label><i class="fas fa-flask"></i> حجم محلول</label>
-                    <div class="manual-input-with-unit">
-                        <input type="number" id="manualSolutionVolume" placeholder="0" step="1" min="1" value="50" inputmode="numeric" style="text-align: center;">
-                        <span class="unit">سی‌سی</span>
-                    </div>
-                </div>
-                <div class="control-group">
-                    <label><i class="fas fa-file-medical-alt"></i> دوز درخواستی</label>
-                    <div class="dose-input-enhanced">
-                        <div class="dose-input-wrapper">
-                            <input type="number" id="manualDesiredDose" placeholder="0" step="0.01" min="0.01" value="1000" inputmode="decimal" style="text-align: center;">
-                            <select class="dose-unit-enhanced" id="manualDoseUnit" style="position:static;transform:none;background:none;color:var(--text-secondary);padding:4px;">
-                                <option value="units/hour">واحد/ساعت</option>
-                                <option value="mg/hour">mg/hour</option>
-                                <option value="mcg/hour">mcg/hour</option>
-                                <option value="mg/min">mg/min</option>
-                                <option value="mcg/min">mcg/min</option>
-                                <option value="mcg/kg/min">mcg/kg/min</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div class="control-group">
-                    <label><i class="fas fa-weight-scale"></i> وزن بیمار (اختیاری)</label>
-                    <div class="manual-input-with-unit">
-                        <input type="number" id="manualPatientWeight" placeholder="0" step="0.1" min="1" value="70" inputmode="decimal" style="text-align: center;">
-                        <span class="unit latin-inline">kg</span>
-                    </div>
+                <div class="volume-custom-input" id="manualCustomVolumeRow" style="display:none;">
+                    <input type="number" id="manualCustomVolume" placeholder="حجم دلخواه" min="1" inputmode="numeric">
+                    <span>سی‌سی</span>
                 </div>
             </div>
-            <button class="calculate-btn-enhanced" id="manualCalculateBtn">
-                <i class="fas fa-calculator"></i><span>محاسبه سرعت پمپ</span>
+
+            <!-- Step 3: Drug amount -->
+            <div class="control-group">
+                <label><i class="fas fa-vial"></i> مقدار دارو اضافه‌شده به محلول</label>
+                <div class="manual-drug-amount-row">
+                    <input type="number" id="manualDrugAmount" placeholder="مقدار" step="any" min="0" inputmode="decimal" class="manual-amount-input">
+                    <select id="manualDrugUnit" class="manual-unit-select">
+                        <option value="units">واحد (units)</option>
+                        <option value="mg" selected>میلی‌گرم (mg)</option>
+                        <option value="mcg">میکروگرم (mcg)</option>
+                        <option value="g">گرم (g)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Step 4: Desired dose -->
+            <div class="control-group">
+                <label><i class="fas fa-file-medical-alt"></i> دوز درخواستی</label>
+                <div class="manual-drug-amount-row">
+                    <input type="number" id="manualDesiredDose" placeholder="دوز" step="any" min="0" inputmode="decimal" class="manual-amount-input">
+                    <select id="manualDoseUnit" class="manual-unit-select">
+                        <option value="units/hr">units/hr</option>
+                        <option value="mg/hr">mg/hr</option>
+                        <option value="mcg/hr">mcg/hr</option>
+                        <option value="mg/min">mg/min</option>
+                        <option value="mcg/min">mcg/min</option>
+                        <option value="mcg/kg/min">mcg/kg/min</option>
+                        <option value="units/kg/hr">units/kg/hr</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Weight (shown when dose unit contains /kg) -->
+            <div class="calc-toggle-item" id="manualWeightRow" style="display:none;">
+                <div class="weight-input-row" style="display:flex;">
+                    <i class="fas fa-user"></i>
+                    <input type="number" id="manualPatientWeight" placeholder="وزن بیمار" min="1" step="0.1" inputmode="decimal">
+                    <span class="weight-unit latin-inline">kg</span>
+                </div>
+            </div>
+
+            <button class="calculate-btn-enhanced gradient" id="manualCalculateBtn">
+                <i class="fas fa-calculator"></i><span>محاسبه</span>
             </button>
-            <div class="manual-results" id="manualResults" style="display: none; margin-top: 16px;">
+
+            <div class="manual-results" id="manualResults" style="display:none; margin-top:16px;">
                 <div class="results-grid-enhanced" style="grid-template-columns: repeat(2, 1fr);">
                     <div class="result-item-enhanced">
                         <div class="result-label-enhanced">غلظت محلول</div>
                         <div class="result-value-enhanced" id="manualConcentration">0</div>
-                        <div class="result-unit-enhanced" id="manualConcentrationUnit">واحد/سی‌سی</div>
+                        <div class="result-unit-enhanced" id="manualConcentrationUnit"></div>
                     </div>
                     <div class="result-item-enhanced">
                         <div class="result-label-enhanced">مقدار کل دارو</div>
                         <div class="result-value-enhanced" id="manualTotalDrug">0</div>
-                        <div class="result-unit-enhanced" id="manualTotalDrugUnit">واحد</div>
+                        <div class="result-unit-enhanced" id="manualTotalDrugUnit"></div>
                     </div>
                     <div class="result-item-enhanced highlight gradient" style="grid-column: span 2;">
                         <div class="result-label-enhanced">سرعت پمپ</div>
@@ -1749,10 +1763,10 @@ function createManualCalculationContent() {
                         <span class="drip-rate-value"><span id="manualDripRate">0</span> <span class="drip-rate-unit">قطره/دقیقه</span></span>
                     </div>
                 </div>
-                <div class="manual-duration-row" id="manualDurationRow" style="margin-top:8px; display:flex; align-items:center; gap:8px; font-family:var(--font-persian); font-size:13px; color:var(--text-secondary); padding:8px 12px; background:var(--surface-elevated); border-radius:10px; border:1px solid var(--border);">
+                <div class="manual-duration-row" id="manualDurationRow">
                     <i class="fas fa-clock" style="color:var(--primary);"></i>
                     <span>زمان تخمینی تزریق: </span>
-                    <strong id="manualDuration" style="color:var(--text-primary); margin-right:4px;">0 ساعت</strong>
+                    <strong id="manualDuration">0 ساعت</strong>
                 </div>
             </div>
         </div>
@@ -1760,20 +1774,55 @@ function createManualCalculationContent() {
     setupManualCalculationFunctionality();
 }
 
+
 function setupManualCalculationFunctionality() {
+    // Method toggle
     const methodBtns = document.querySelectorAll('#manualSection .method-btn-compact');
     methodBtns.forEach(btn => btn.addEventListener('click', function() {
         methodBtns.forEach(b => b.classList.remove('active'));
         this.classList.add('active');
+        // Adjust volume presets based on method
+        const isSyringe = this.dataset.method === 'syringe';
+        document.querySelectorAll('#manualVolumePresets .volume-preset-btn').forEach(b => {
+            if (!b.dataset.vol) return;
+            const vol = parseInt(b.dataset.vol);
+            if (!isNaN(vol)) b.style.display = (isSyringe ? vol <= 100 : vol >= 100 || isNaN(vol)) ? '' : 'none';
+        });
+        fixVolumeButtonColors();
     }));
-    let manualAmpCount = 1;
-    document.getElementById('manualDecreaseAmpoule').addEventListener('click', () => {
-        if (manualAmpCount > 1) { manualAmpCount--; document.getElementById('manualAmpouleCount').textContent = manualAmpCount; }
+
+    // Volume presets
+    let manualVolume = 50;
+    const volBtns = document.querySelectorAll('#manualVolumePresets .volume-preset-btn');
+    const manualCustomVolumeRow = document.getElementById('manualCustomVolumeRow');
+    volBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            volBtns.forEach(b => b.classList.remove('active'));
+            if (this.dataset.vol === 'custom') {
+                if (manualCustomVolumeRow) manualCustomVolumeRow.style.display = 'flex';
+                this.classList.add('active');
+            } else {
+                if (manualCustomVolumeRow) manualCustomVolumeRow.style.display = 'none';
+                manualVolume = parseInt(this.dataset.vol);
+                this.classList.add('active');
+            }
+            fixVolumeButtonColors();
+        });
     });
-    document.getElementById('manualIncreaseAmpoule').addEventListener('click', () => {
-        if (manualAmpCount < 20) { manualAmpCount++; document.getElementById('manualAmpouleCount').textContent = manualAmpCount; }
-    });
+
+    // Show weight input when dose unit contains /kg
+    const doseUnitSelect = document.getElementById('manualDoseUnit');
+    const manualWeightRow = document.getElementById('manualWeightRow');
+    if (doseUnitSelect) {
+        doseUnitSelect.addEventListener('change', function() {
+            if (manualWeightRow) manualWeightRow.style.display = this.value.includes('/kg') ? 'block' : 'none';
+        });
+    }
+
+    // Calculate
     document.getElementById('manualCalculateBtn').addEventListener('click', calculateManualInfusion);
+
+    // Close
     document.getElementById('closeManualBtn').addEventListener('click', () => {
         document.getElementById('manualSection').style.display = 'none';
         document.getElementById('calculatorControls').style.display = 'grid';
@@ -1786,40 +1835,65 @@ function setupManualCalculationFunctionality() {
 }
 
 function calculateManualInfusion() {
-    const strength = PersianNumbers.parseNumber(document.getElementById('manualStrength').value);
-    const strengthUnit = document.getElementById('manualStrengthUnit').value;
-    const vialVolume = PersianNumbers.parseNumber(document.getElementById('manualVialVolume').value);
-    const ampouleCount = parseInt(document.getElementById('manualAmpouleCount').textContent);
-    const solutionVolume = PersianNumbers.parseNumber(document.getElementById('manualSolutionVolume').value);
-    const desiredDose = PersianNumbers.parseNumber(document.getElementById('manualDesiredDose').value);
-    const doseUnit = document.getElementById('manualDoseUnit').value;
-    const patientWeight = PersianNumbers.parseNumber(document.getElementById('manualPatientWeight').value) || 0;
-
-    if (!strength || !vialVolume || !solutionVolume || !desiredDose) {
-        showToast('خطا', 'لطفاً تمامی فیلدهای ضروری را پر کنید', 'error');
-        return;
+    // Get volume
+    let solutionVolume;
+    const activeVolBtn = document.querySelector('#manualVolumePresets .volume-preset-btn.active');
+    if (activeVolBtn?.dataset.vol === 'custom') {
+        solutionVolume = PersianNumbers.parseNumber(document.getElementById('manualCustomVolume')?.value);
+    } else {
+        solutionVolume = activeVolBtn ? parseInt(activeVolBtn.dataset.vol) : NaN;
     }
 
-    const totalDrug = ampouleCount * strength;
-    const concentration = totalDrug / solutionVolume;
-    let desiredDosePerHour = desiredDose;
-    if (doseUnit.includes('/min')) desiredDosePerHour = desiredDose * 60;
-    if (doseUnit.includes('/kg/') && patientWeight > 0) {
-        desiredDosePerHour = desiredDose * patientWeight;
-        if (doseUnit.includes('/min')) desiredDosePerHour *= 60;
+    const drugAmount = PersianNumbers.parseNumber(document.getElementById('manualDrugAmount')?.value);
+    const drugUnit = document.getElementById('manualDrugUnit')?.value || 'mg';
+    const desiredDose = PersianNumbers.parseNumber(document.getElementById('manualDesiredDose')?.value);
+    const doseUnit = document.getElementById('manualDoseUnit')?.value || 'mg/hr';
+    const patientWeight = PersianNumbers.parseNumber(document.getElementById('manualPatientWeight')?.value) || 0;
+
+    // Validate
+    if (!solutionVolume || isNaN(solutionVolume) || solutionVolume <= 0) {
+        showToast('خطا', 'حجم محلول را انتخاب کنید', 'error'); return;
     }
-    const pumpRate = desiredDosePerHour / concentration;
+    if (!drugAmount || isNaN(drugAmount) || drugAmount <= 0) {
+        showToast('خطا', 'مقدار دارو را وارد کنید', 'error');
+        document.getElementById('manualDrugAmount')?.focus(); return;
+    }
+    if (!desiredDose || isNaN(desiredDose) || desiredDose <= 0) {
+        showToast('خطا', 'دوز درخواستی را وارد کنید', 'error');
+        document.getElementById('manualDesiredDose')?.focus(); return;
+    }
+    if (doseUnit.includes('/kg') && (!patientWeight || patientWeight <= 0)) {
+        showToast('خطا', 'وزن بیمار را وارد کنید', 'error');
+        document.getElementById('manualPatientWeight')?.focus(); return;
+    }
+
+    // Normalize drug amount to the dose unit's base unit
+    // e.g. drug in mg, dose in mcg → convert drug to mcg for concentration
+    let drugAmountNorm = drugAmount;
+    if (drugUnit === 'g' && (doseUnit.includes('mg') || doseUnit.includes('mcg'))) drugAmountNorm *= 1000;
+    if (drugUnit === 'mg' && doseUnit.includes('mcg')) drugAmountNorm *= 1000;
+    if (drugUnit === 'mcg' && doseUnit.includes('mg')) drugAmountNorm /= 1000;
+
+    const concentration = drugAmountNorm / solutionVolume; // per cc
+
+    // Convert desired dose to per-hour
+    let dosePerHour = desiredDose;
+    if (doseUnit.includes('/min')) dosePerHour = desiredDose * 60;
+    if (doseUnit.includes('/kg')) {
+        dosePerHour = dosePerHour * patientWeight;
+    }
+
+    const pumpRate = dosePerHour / concentration;
     const duration = solutionVolume / pumpRate;
     const { factor: dripFactor, label: dripLabel } = getDripFactor(solutionVolume);
     const dropsPerMin = (pumpRate * dripFactor) / 60;
 
-    const totalEl = document.getElementById('manualTotalDrug');
-    const totalUnitEl = document.getElementById('manualTotalDrugUnit');
-    if (totalEl) totalEl.textContent = PersianNumbers.formatNumber(totalDrug, 0);
-    if (totalUnitEl) totalUnitEl.innerHTML = `<span class="latin-inline">${strengthUnit}</span>`;
-
+    // Display
+    const doseBaseUnit = doseUnit.replace('/hr','').replace('/min','').replace('/kg','').trim();
+    document.getElementById('manualTotalDrug').textContent = PersianNumbers.formatNumber(drugAmount, 1);
+    document.getElementById('manualTotalDrugUnit').innerHTML = `<span class="latin-inline">${drugUnit}</span>`;
     document.getElementById('manualConcentration').textContent = PersianNumbers.formatNumber(concentration, 3);
-    document.getElementById('manualConcentrationUnit').innerHTML = `<span class="latin-inline">${strengthUnit}/cc</span>`;
+    document.getElementById('manualConcentrationUnit').innerHTML = `<span class="latin-inline">${doseBaseUnit}/cc</span>`;
     document.getElementById('manualPumpRate').textContent = PersianNumbers.formatNumber(pumpRate, 2);
 
     const dripRateEl = document.getElementById('manualDripRate');
@@ -1832,8 +1906,10 @@ function calculateManualInfusion() {
 
     document.getElementById('manualResults').style.display = 'block';
     haptic(40);
-    showToast('موفق', 'محاسبه دستی با موفقیت انجام شد', 'success');
+    showToast('موفق', 'محاسبه با موفقیت انجام شد', 'success');
+    setTimeout(() => document.getElementById('manualResults')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
 }
+
 
 // ============================================
 // TAB MANAGEMENT
@@ -2689,10 +2765,13 @@ function displayDripRate(pumpRate, volumeCC) {
 // ============================================
 function measureTabBarHeight() {
     const tabBar = document.querySelector('.tab-bar');
-    if (!tabBar) return;
+    const mainContent = document.querySelector('.main-content');
+    if (!tabBar || !mainContent) return false;
     const rect = tabBar.getBoundingClientRect();
     const height = rect.height;
     if (height > 20) {
+        // Set directly on the element — bypasses any env() first-render issue
+        mainContent.style.bottom = height + 'px';
         document.documentElement.style.setProperty('--tab-bar-height', height + 'px');
         return true;
     }
@@ -2701,7 +2780,7 @@ function measureTabBarHeight() {
 
 function setupTabBarMeasurement() {
     if (!measureTabBarHeight()) {
-        const delays = [50, 150, 300, 600, 1000];
+        const delays = [0, 50, 150, 300, 600, 1000];
         delays.forEach(d => setTimeout(measureTabBarHeight, d));
     }
     window.addEventListener('resize', measureTabBarHeight);
@@ -2712,6 +2791,11 @@ function setupTabBarMeasurement() {
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) setTimeout(measureTabBarHeight, 200);
     });
+    // visualViewport fires when iOS finishes calculating safe area insets
+    // This is the key fix for the first-load gap on iOS PWA
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', measureTabBarHeight);
+    }
 }
 
 // ============================================
