@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#ffffff" id="themeColorMeta">
-    <meta name="theme-color" content="#1f2937" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#0f172a" id="themeColorMeta">
     <title>FoxiMed | دستیار محاسبات دارویی</title>
     <meta name="description" content="دستیار هوشمند پرستاری — FoxiMed">
     <link rel="manifest" href="manifest.json">
@@ -1205,25 +1204,6 @@
     <script src="drugDatabase.js"></script>
     <script src="converters.js"></script>
     <script src="script.js"></script>
-    <script>
-        // Measure tab-bar height as early as possible to avoid layout gap on first load
-        (function() {
-            function earlyMeasure() {
-                var tabBar = document.querySelector('.tab-bar');
-                if (tabBar) {
-                    var h = tabBar.getBoundingClientRect().height;
-                    if (h > 20) {
-                        document.documentElement.style.setProperty('--tab-bar-height', h + 'px');
-                        return true;
-                    }
-                }
-                return false;
-            }
-            if (!earlyMeasure()) {
-                [0, 50, 150, 300].forEach(function(d) { setTimeout(earlyMeasure, d); });
-            }
-        })();
-    </script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
