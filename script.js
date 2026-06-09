@@ -6,6 +6,8 @@ const AppState = {
     infusionMethod: 'syringe',
     solutionVolume: 50,
     ampouleCount: 2,
+    customDrugAmount: null,
+    useCustomDrugAmount: false,
     desiredDose: '',
     patientWeight: '',
     useWeight: false,
@@ -472,6 +474,14 @@ const DOM = {
     customVolume: document.getElementById('customVolume'),
     customVolumeContainer: document.getElementById('customVolumeContainer'),
     ampouleCount: document.getElementById('ampouleCount'),
+    ampouleCounterRow: document.getElementById('ampouleCounterRow'),
+    customAmountToggle: document.getElementById('customAmountToggle'),
+    customAmountToggleRow: document.getElementById('customAmountToggleRow'),
+    customAmountToggleLabel: document.getElementById('customAmountToggleLabel'),
+    customAmountInputRow: document.getElementById('customAmountInputRow'),
+    customAmountInput: document.getElementById('customAmountInput'),
+    customAmountUnit: document.getElementById('customAmountUnit'),
+    customAmountPresets: document.getElementById('customAmountPresets'),
     decreaseAmpoule: document.getElementById('decreaseAmpoule'),
     increaseAmpoule: document.getElementById('increaseAmpoule'),
     ampouleInfo: document.getElementById('ampouleInfo'),
@@ -856,6 +866,7 @@ function selectDrug(drugId) {
     updateAmpouleTypeSelector(drug);
     updateAmpouleInfo();
     updateVolumeOptions();
+    setupCustomAmountUI(drug);
 
     if (DOM.weightContainer && DOM.weightCheckbox && DOM.patientWeight) {
         if (drug.weightBased && drug.weightBased.active) {
@@ -939,6 +950,105 @@ function updateAmpouleInfo() {
             DOM.ampouleInfo.innerHTML = `<span>هر آمپول: </span><span class="latin-inline">${ampoule.label}</span>`;
         }
     }
+}
+
+function setupCustomAmountUI(drug) {
+    const isInsulin = drug.id === 'insulin';
+    const ampoule = drug.ampouleOptions[AppState.currentAmpouleIndex] || drug.ampouleOptions[0];
+    const unit = ampoule.unit;
+
+    AppState.useCustomDrugAmount = isInsulin;
+    AppState.customDrugAmount = null;
+
+    if (!DOM.customAmountToggle) return;
+
+    if (DOM.customAmountUnit) DOM.customAmountUnit.textContent = unit;
+
+    if (DOM.customAmountInput) {
+        DOM.customAmountInput.value = '';
+        DOM.customAmountInput.placeholder = isInsulin ? 'مثلاً: ۵۰' : `مقدار به ${unit}...`;
+    }
+
+    // Build preset chips
+    if (DOM.customAmountPresets) {
+        DOM.customAmountPresets.innerHTML = '';
+        const presets = getAmountPresets(drug, unit);
+        presets.forEach(val => {
+            const chip = document.createElement('button');
+            chip.className = 'amount-preset-chip';
+            chip.textContent = val + ' ' + unit;
+            chip.addEventListener('click', () => {
+                if (DOM.customAmountInput) {
+                    DOM.customAmountInput.value = val;
+                    DOM.customAmountInput.dataset.numericValue = val;
+                }
+                DOM.customAmountPresets.querySelectorAll('.amount-preset-chip')
+                    .forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                clearResults();
+            });
+            DOM.customAmountPresets.appendChild(chip);
+        });
+        DOM.customAmountPresets.style.display = presets.length ? 'flex' : 'none';
+    }
+
+    if (isInsulin) {
+        if (DOM.customAmountToggleRow) DOM.customAmountToggleRow.style.display = 'none';
+        if (DOM.ampouleCounterRow) DOM.ampouleCounterRow.style.display = 'none';
+        if (DOM.ampouleInfo) DOM.ampouleInfo.style.display = 'none';
+        if (DOM.customAmountInputRow) DOM.customAmountInputRow.style.display = 'flex';
+    } else {
+        if (DOM.customAmountToggleRow) DOM.customAmountToggleRow.style.display = 'flex';
+        if (DOM.customAmountToggleLabel) DOM.customAmountToggleLabel.textContent = 'مقدار دلخواه دارو';
+        if (DOM.ampouleCounterRow) DOM.ampouleCounterRow.style.display = 'flex';
+        if (DOM.ampouleInfo) DOM.ampouleInfo.style.display = '';
+        if (DOM.customAmountInputRow) DOM.customAmountInputRow.style.display = 'none';
+
+        const newToggle = DOM.customAmountToggle.cloneNode(true);
+        DOM.customAmountToggle.parentNode.replaceChild(newToggle, DOM.customAmountToggle);
+        DOM.customAmountToggle = newToggle;
+        newToggle.checked = false;
+
+        newToggle.addEventListener('change', function () {
+            AppState.useCustomDrugAmount = this.checked;
+            AppState.customDrugAmount = null;
+            if (DOM.customAmountInput) DOM.customAmountInput.value = '';
+            if (DOM.customAmountPresets) {
+                DOM.customAmountPresets.querySelectorAll('.amount-preset-chip')
+                    .forEach(c => c.classList.remove('active'));
+            }
+            if (DOM.customAmountInputRow) DOM.customAmountInputRow.style.display = this.checked ? 'flex' : 'none';
+            if (DOM.ampouleCounterRow) DOM.ampouleCounterRow.style.display = this.checked ? 'none' : 'flex';
+            if (DOM.ampouleInfo) DOM.ampouleInfo.style.display = this.checked ? 'none' : '';
+            clearResults();
+        });
+    }
+}
+
+function getAmountPresets(drug, unit) {
+    if (drug.id === 'insulin') return [20, 25, 50, 100];
+    if (unit === 'mg') {
+        const strength = drug.ampouleOptions[0]?.strength || 0;
+        if (strength >= 200) return [200, 300, 400, strength];
+        if (strength >= 50)  return [50, 100, 150, strength];
+        return [10, 20, 50];
+    }
+    if (unit === 'mcg') return [200, 400, 800];
+    if (unit === 'units') return [5000, 10000, 25000];
+    return [];
+}
+
+
+function getEffectiveTotalDrug() {
+    // Returns the total drug amount to use in calculation
+    if (AppState.useCustomDrugAmount) {
+        const raw = DOM.customAmountInput ? PersianNumbers.parseNumber(DOM.customAmountInput.value) : NaN;
+        if (!isNaN(raw) && raw > 0) return raw;
+        return null; // signal: invalid
+    }
+    const drug = drugDatabase[AppState.selectedDrug];
+    const ampoule = drug.ampouleOptions[AppState.currentAmpouleIndex];
+    return AppState.ampouleCount * ampoule.strength;
 }
 
 function updateVolumeOptions() {
@@ -1056,7 +1166,15 @@ function calculateInfusion() {
     }
 
     AppState.desiredDose = doseValue;
-    const totalDrug = AppState.ampouleCount * ampoule.strength;
+
+    // Custom drug amount takes priority over ampoule count × strength
+    const totalDrug = getEffectiveTotalDrug();
+    if (totalDrug === null) {
+        showToast('خطا', `لطفاً مقدار دارو را وارد کنید`, 'error');
+        if (DOM.customAmountInput) DOM.customAmountInput.focus();
+        return;
+    }
+
     const concentration = totalDrug / AppState.solutionVolume;
 
     let totalDrugForCalculation = totalDrug;
@@ -1135,8 +1253,11 @@ function generateStepByStepGuide(drug, totalDrug, concentration, pumpRate, desir
     const { factor: dripFactor, label: dripLabel } = getDripFactor(AppState.solutionVolume);
     const dropsPerMin = (pumpRate * dripFactor) / 60;
     const setType = AppState.solutionVolume <= 100 ? 'سرنگ پمپ / میکروست' : 'ست وریدی ماکروست';
+    const drugPrep = AppState.useCustomDrugAmount
+        ? `اضافه کردن ${PersianNumbers.formatNumber(totalDrug, 0)} ${drug.ampouleOptions[0].unit} از ${drug.persianName} به محلول`
+        : `آماده کردن ${AppState.ampouleCount} آمپول ${drug.persianName}`;
     const steps = [
-        `۱. آماده کردن ${AppState.ampouleCount} آمپول ${drug.persianName}`,
+        `۱. ${drugPrep}`,
         `۲. کشیدن ${AppState.solutionVolume} cc محلول ${drug.solutionType[0]} به سرنگ/کیسه`,
         `۳. اضافه کردن ${PersianNumbers.formatNumber(totalDrug, 0)} ${drug.ampouleOptions[0].unit} از دارو به محلول`,
         `۴. مخلوط کردن کامل محلول`,
