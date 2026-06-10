@@ -1047,7 +1047,7 @@ function setupCustomAmountUI(drug) {
     } else {
         if (DOM.customAmountToggleRow) DOM.customAmountToggleRow.style.display = 'block';
         if (DOM.customAmountToggleLabel) DOM.customAmountToggleLabel.textContent = 'مقدار دلخواه دارو';
-        if (DOM.ampouleCounterRow) { DOM.ampouleCounterRow.style.display = 'flex'; DOM.ampouleCounterRow.classList.remove('ampoule-greyed'); }
+        if (DOM.ampouleCounterRow) { DOM.ampouleCounterRow.style.display = 'block'; DOM.ampouleCounterRow.classList.remove('ampoule-greyed'); }
         if (DOM.ampouleInfo) { DOM.ampouleInfo.style.display = ''; DOM.ampouleInfo.classList.remove('ampoule-greyed'); }
         if (DOM.customAmountInputRow) DOM.customAmountInputRow.style.display = 'none';
 
