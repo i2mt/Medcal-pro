@@ -225,14 +225,14 @@
                                             </span>
                                             <input type="checkbox" id="customAmountToggle" style="display:none;">
                                         </div>
-                                        <!-- Custom amount input + presets -->
-                                        <div class="custom-amount-input-row" id="customAmountInputRow" style="display:none;">
-                                            <div class="custom-amount-presets" id="customAmountPresets"></div>
-                                            <div class="custom-amount-field">
-                                                <input type="text" inputmode="decimal" id="customAmountInput" class="custom-amount-input" placeholder="مقدار دارو...">
-                                                <span class="custom-amount-unit" id="customAmountUnit">mg</span>
-                                            </div>
-                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Custom amount input + presets (outside toggle so insulin can show it independently) -->
+                                <div class="calc-toggle-item" id="customAmountInputRow" style="display:none;">
+                                    <div class="custom-amount-presets" id="customAmountPresets"></div>
+                                    <div class="custom-amount-field">
+                                        <input type="text" inputmode="decimal" id="customAmountInput" class="custom-amount-input" placeholder="مقدار دارو...">
+                                        <span class="custom-amount-unit" id="customAmountUnit">mg</span>
                                     </div>
                                 </div>
                             </div>
