@@ -3,7 +3,7 @@
 // Always tries to fetch the latest version.
 // Falls back to cache only when offline.
 
-const CACHE_NAME = 'FoxiMed_v3.9.10';
+const CACHE_NAME = 'FoxiMed_v3.9.11';
 
 const urlsToCache = [
     './',
