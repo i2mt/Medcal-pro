@@ -1025,7 +1025,7 @@ function setupCustomAmountUI(drug) {
         AppState.customDrugAmount = null;
         if (DOM.customAmountToggle) DOM.customAmountToggle.checked = on;
         if (DOM.customAmountIosToggle) DOM.customAmountIosToggle.classList.toggle('on', on);
-        if (DOM.customAmountInputRow) DOM.customAmountInputRow.style.display = on ? 'flex' : 'none';
+        if (DOM.customAmountInputRow) DOM.customAmountInputRow.style.display = on ? 'block' : 'none';
         if (!isInsulin) {
             if (DOM.ampouleCounterRow) DOM.ampouleCounterRow.classList.toggle('ampoule-greyed', on);
             if (DOM.ampouleInfo) DOM.ampouleInfo.classList.toggle('ampoule-greyed', on);
@@ -1039,11 +1039,11 @@ function setupCustomAmountUI(drug) {
     }
 
     if (isInsulin) {
-        // Insulin: hide toggle row entirely, always show input
+        // Insulin: hide toggle row, always show input row independently
         if (DOM.customAmountToggleRow) DOM.customAmountToggleRow.style.display = 'none';
         if (DOM.ampouleCounterRow) DOM.ampouleCounterRow.style.display = 'none';
         if (DOM.ampouleInfo) DOM.ampouleInfo.style.display = 'none';
-        if (DOM.customAmountInputRow) DOM.customAmountInputRow.style.display = 'flex';
+        if (DOM.customAmountInputRow) DOM.customAmountInputRow.style.display = 'block';
     } else {
         if (DOM.customAmountToggleRow) DOM.customAmountToggleRow.style.display = 'block';
         if (DOM.customAmountToggleLabel) DOM.customAmountToggleLabel.textContent = 'مقدار دلخواه دارو';
@@ -1697,8 +1697,8 @@ function createManualCalculationContent() {
                     <button class="volume-preset-btn" data-vol="20"><span class="number">20</span><span class="unit-text">cc</span></button>
                     <button class="volume-preset-btn active" data-vol="50"><span class="number">50</span><span class="unit-text">cc</span></button>
                     <button class="volume-preset-btn" data-vol="100" style="display:none;"><span class="number">100</span><span class="unit-text">cc</span></button>
-                    <button class="volume-preset-btn" data-vol="250"><span class="number">250</span><span class="unit-text">cc</span></button>
-                    <button class="volume-preset-btn" data-vol="500"><span class="number">500</span><span class="unit-text">cc</span></button>
+                    <button class="volume-preset-btn" data-vol="250" style="display:none;"><span class="number">250</span><span class="unit-text">cc</span></button>
+                    <button class="volume-preset-btn" data-vol="500" style="display:none;"><span class="number">500</span><span class="unit-text">cc</span></button>
                     <button class="volume-preset-btn" data-vol="custom"><span class="custom-text">سایر</span></button>
                 </div>
                 <div class="volume-custom-input" id="manualCustomVolumeRow" style="display:none;">
@@ -1796,16 +1796,14 @@ function setupManualCalculationFunctionality() {
         this.classList.add('active');
         // Adjust volume presets based on method
         const isSyringe = this.dataset.method === 'syringe';
+        const syringeVols = [10, 20, 50];
+        const infusionVols = [100, 250, 500];
         document.querySelectorAll('#manualVolumePresets .volume-preset-btn').forEach(b => {
             if (!b.dataset.vol || b.dataset.vol === 'custom') return;
             const vol = parseInt(b.dataset.vol);
-            if (isSyringe) {
-                b.style.display = vol < 100 ? '' : 'none';
-            } else {
-                b.style.display = vol >= 100 ? '' : 'none';
-            }
+            b.style.display = (isSyringe ? syringeVols : infusionVols).includes(vol) ? '' : 'none';
         });
-        // Reset active selection to first visible
+        // Reset active to first visible
         let firstVisible = null;
         document.querySelectorAll('#manualVolumePresets .volume-preset-btn').forEach(b => {
             b.classList.remove('active');
