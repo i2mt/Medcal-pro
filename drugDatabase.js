@@ -764,7 +764,7 @@ const drugDatabase = {
         category: 'Alpha/Beta Blocker',
         defaultAmpoules: 1,
         ampouleOptions: [
-            { strength: 100, unit: 'mg', volume: 20, label: '100 mg in 20 mL' }
+            { strength: 100, unit: 'mg', volume: 20, label: '100 mg in 20 mL' },
              { strength: 20, unit: 'mg', volume: 4, label: '20 mg in 4 mL' }
         ],
         defaultSolutionVolumes: { 
