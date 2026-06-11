@@ -997,7 +997,7 @@ const drugDatabase = {
             'مانیتورینگ ECG قبل و بعد از شروع'
         ],
         specialInstructions: 'در صورت افزایش QT interval به بیش از 500 ms یا ظهور Torsades de Pointes، تزریق را متوقف کنید. پایش ریوی هر 6-12 ماه ضروری است.'
-    }
+    },
     lidocaine: {
         id: 'lidocaine',
         persianName: 'لیدوکائین',
