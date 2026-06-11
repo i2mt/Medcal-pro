@@ -269,7 +269,7 @@ const drugDatabase = {
         category: 'Opioid Analgesic',
         defaultAmpoules: 1,
         ampouleOptions: [
-            { strength: 500, unit: 'mcg', volume: 10, label: '500 mg in 10 mL' }
+            { strength: 500, unit: 'mcg', volume: 10, label: '500 mcg in 10 mL' }
         ],
         defaultSolutionVolumes: { 
             syringe: [10, 20, 50], 
@@ -432,8 +432,8 @@ const drugDatabase = {
         category: 'Vasodilator',
         defaultAmpoules: 1,
         ampouleOptions: [
-            { strength: 5, unit: 'mg', volume: 1, label: '5 mg in 1 mL' },
-            { strength: 10, unit: 'mg', volume: 1, label: '10 mg in 1 mL' }
+            { strength: 5, unit: 'mg', volume: 2, label: '5 mg in 2 mL' },
+            { strength: 10, unit: 'mg', volume: 2, label: '10 mg in 2 mL' }
         ],
         defaultSolutionVolumes: { 
             syringe: [10, 20, 50], 
