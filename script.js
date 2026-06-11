@@ -1170,6 +1170,13 @@ function calculateInfusion() {
 
     let desiredDosePerHour;
 
+    // Parse unit to drive conversion — avoids brittle drug-ID switch statements
+    const stdUnit = drug.standardUnit || '';
+    const isPerMin = stdUnit.includes('/min');
+    const isWeightBased = stdUnit.includes('/kg');
+    const doseInMcg = stdUnit.startsWith('mcg');
+    const ampouleInMg = (drug.ampouleOptions[0]?.unit || '') === 'mg';
+
     if (drug.weightBased && drug.weightBased.active && AppState.useWeight) {
         let weightValue;
         if (DOM.patientWeight.value && DOM.patientWeight.value.trim() !== '') {
@@ -1185,19 +1192,12 @@ function calculateInfusion() {
         }
         DOM.patientWeight.style.borderColor = '';
         AppState.patientWeight = weightValue;
-        switch(drug.id) {
-            case 'dopamine': case 'norepinephrine': desiredDosePerHour = doseValue * weightValue * 60; break;
-            case 'fentanyl': desiredDosePerHour = doseValue * weightValue; break;
-            case 'midazolam': desiredDosePerHour = (doseValue * weightValue * 60) / 1000; break;
-            default: desiredDosePerHour = doseValue * weightValue;
-        }
+        // e.g. mcg/kg/min → ×weight×60; mcg/kg/h → ×weight; units/kg/h → ×weight
+        desiredDosePerHour = doseValue * weightValue * (isPerMin ? 60 : 1);
     } else {
         AppState.patientWeight = null;
-        switch(drug.id) {
-            case 'dopamine': case 'norepinephrine': case 'tng': desiredDosePerHour = doseValue * 60; break;
-            case 'amiodarone': desiredDosePerHour = doseValue * 60; break;
-            default: desiredDosePerHour = doseValue;
-        }
+        // e.g. mg/min or mcg/min → ×60; mg/h or units/h → ×1
+        desiredDosePerHour = doseValue * (isPerMin ? 60 : 1);
     }
 
     if (AppState.customVolume) {
@@ -1231,7 +1231,8 @@ function calculateInfusion() {
     let concentrationForCalculation = concentration;
     let desiredDoseForCalculation = desiredDosePerHour;
 
-    if (drug.id === 'norepinephrine' || drug.id === 'dopamine' || drug.id === 'fentanyl' || drug.id === 'tng') {
+    // If dose unit is mcg but ampoule/drug is stored in mg → convert drug to mcg for concentration
+    if (doseInMcg && ampouleInMg) {
         totalDrugForCalculation = totalDrug * 1000;
         concentrationForCalculation = totalDrugForCalculation / AppState.solutionVolume;
     }
@@ -1256,7 +1257,9 @@ function displayResults(totalDrug, concentration, pumpRate, duration, unit) {
     DOM.totalDrugUnit.innerHTML = `<span class="latin-inline">${unit}</span>`;
 
     let concentrationDisplay, concentrationUnitDisplay;
-    if (drug.id === 'norepinephrine' || drug.id === 'dopamine' || drug.id === 'fentanyl' || drug.id === 'tng') {
+    const _doseInMcg = (drug.standardUnit || '').startsWith('mcg');
+    const _ampouleInMg = (drug.ampouleOptions[0]?.unit || '') === 'mg';
+    if (_doseInMcg && _ampouleInMg) {
         concentrationDisplay = PersianNumbers.formatNumber(concentration * 1000, 2);
         concentrationUnitDisplay = 'mcg/cc';
     } else {
@@ -2668,7 +2671,9 @@ function displayResultsReverse(totalDrug, concentration, pumpRate, derivedDose, 
     DOM.totalDrugAmount.textContent = PersianNumbers.formatNumber(totalDrug, 0);
     DOM.totalDrugUnit.innerHTML = `<span class="latin-inline">${ampUnit}</span>`;
     let concentrationDisplay, concentrationUnitDisplay;
-    if (drug.id === 'norepinephrine' || drug.id === 'dopamine' || drug.id === 'fentanyl' || drug.id === 'tng') {
+    const _doseInMcg = (drug.standardUnit || '').startsWith('mcg');
+    const _ampouleInMg = (drug.ampouleOptions[0]?.unit || '') === 'mg';
+    if (_doseInMcg && _ampouleInMg) {
         concentrationDisplay = PersianNumbers.formatNumber(concentration * 1000, 2);
         concentrationUnitDisplay = 'mcg/cc';
     } else {
