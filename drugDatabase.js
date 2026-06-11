@@ -998,6 +998,155 @@ const drugDatabase = {
         ],
         specialInstructions: 'در صورت افزایش QT interval به بیش از 500 ms یا ظهور Torsades de Pointes، تزریق را متوقف کنید. پایش ریوی هر 6-12 ماه ضروری است.'
     }
+    lidocaine: {
+        id: 'lidocaine',
+        persianName: 'لیدوکائین',
+        englishName: 'Lidocaine',
+        alternativeNames: ['لیگنوکائین', 'Lignocaine', 'Xylocaine'],
+        icon: 'fas fa-bolt',
+        color: '#7c3aed',
+        category: 'Antiarrhythmic',
+        defaultAmpoules: 2,
+        ampouleOptions: [
+            { strength: 100, unit: 'mg', volume: 5, label: '100 mg in 5 mL' }
+        ],
+        defaultSolutionVolumes: {
+            syringe: [10, 20, 50],
+            infusion: [100, 250, 500]
+        },
+        defaultVolume: { syringe: 50, infusion: 250 },
+        standardUnit: 'mg/min',
+        weightBased: {
+            active: true,
+            unit: 'mcg/kg/min',
+            typical: 20,
+            range: { min: 10, max: 50 },
+            defaultUseWeight: false,
+            defaultWeight: 70
+        },
+        typicalDoseRange: { min: 1, max: 4, unit: 'mg/min' },
+        maxConcentration: '8 mg/mL',
+        solutionType: ['D5W', 'N.S'],
+        lineRequirement: 'محیطی یا مرکزی',
+        ySiteCompatibilities: {
+            compatible: [
+                'هپارین (Heparin)',
+                'دوپامین (Dopamine)',
+                'نیتروگلیسرین (Nitroglycerin)',
+                'لابتالول (Labetalol)',
+                'میدازولام (Midazolam)',
+                'مورفین (Morphine)',
+                'فنتانیل (Fentanyl)'
+            ],
+            incompatible: [
+                'آمفوتریسین B (Amphotericin B)',
+                'بی‌کربنات سدیم (Sodium Bicarbonate)',
+                'سفازولین (Cefazolin)',
+                'فنی‌توئین (Phenytoin)',
+                'ایندومتاسین (Indomethacin)'
+            ]
+        },
+        compatNotes: 'لیدوکائین در D5W پایدار است. از محلول‌های قلیایی اجتناب شود.',
+        administrationNotes: [
+            'بولوس لودینگ: ۱–۱.۵ میلی‌گرم/کیلوگرم IV طی ۲ دقیقه',
+            'نگهداری: ۱–۴ میلی‌گرم/دقیقه (معادل ۲۰–۵۰ میکروگرم/کیلوگرم/دقیقه)',
+            'در نارسایی کبدی دوز را کاهش دهید',
+            'در نارسایی قلبی نیمه‌عمر طولانی می‌شود',
+            'اگر آریتمی کنترل نشد، بولوس ۰.۵ میلی‌گرم/کیلوگرم می‌توان تکرار کرد (حداکثر ۳ mg/kg)'
+        ],
+        monitoring: [
+            'ریتم قلبی پیوسته',
+            'علائم مسمومیت: لرزش، اختلال بینایی، تشنج',
+            'سطح سرمی (هدف: ۱.۵–۵ میکروگرم/مل)',
+            'فشار خون',
+            'سطح هوشیاری'
+        ],
+        preparationSteps: [
+            'تایید دستور پزشک',
+            'آماده کردن دو آمپول لیدوکائین ۱۰۰ میلی‌گرمی',
+            'اضافه کردن ۲۰۰ میلی‌گرم به ۲۵۰ میلی‌لیتر D5W',
+            'غلظت نهایی: ۰.۸ میلی‌گرم/مل',
+            'تنظیم پمپ بر اساس وزن بیمار'
+        ],
+        specialInstructions: 'در بیماران با بلوک قلبی درجه ۲ یا ۳ بدون پیس‌میکر ممنوع است. در سندرم Wolf-Parkinson-White احتیاط شود.'
+    },
+    dobutamine: {
+        id: 'dobutamine',
+        persianName: 'دوبوتامین',
+        englishName: 'Dobutamine',
+        alternativeNames: ['دوبوترکس', 'Dobutrex', 'Inotrex'],
+        icon: 'fas fa-heart-pulse',
+        color: '#e11d48',
+        category: 'Inotrope',
+        defaultAmpoules: 1,
+        ampouleOptions: [
+            { strength: 250, unit: 'mg', volume: 20, label: '250 mg in 20 mL' }
+        ],
+        defaultSolutionVolumes: {
+            syringe: [10, 20, 50],
+            infusion: [100, 250, 500]
+        },
+        defaultVolume: { syringe: 50, infusion: 250 },
+        standardUnit: 'mcg/min',
+        weightBased: {
+            active: true,
+            unit: 'mcg/kg/min',
+            typical: 5,
+            range: { min: 2, max: 20 },
+            defaultUseWeight: false,
+            defaultWeight: 70
+        },
+        typicalDoseRange: { min: 2, max: 20, unit: 'mcg/kg/min' },
+        maxConcentration: '1000 mcg/mL',
+        solutionType: ['D5W', 'N.S'],
+        lineRequirement: 'ترجیحاً لاین مرکزی',
+        ySiteCompatibilities: {
+            compatible: [
+                'دوپامین (Dopamine)',
+                'نوراپی‌نفرین (Norepinephrine)',
+                'هپارین (Heparin)',
+                'میدازولام (Midazolam)',
+                'فنتانیل (Fentanyl)',
+                'مورفین (Morphine)',
+                'لیدوکائین (Lidocaine)',
+                'نیتروگلیسرین (Nitroglycerin)'
+            ],
+            incompatible: [
+                'بی‌کربنات سدیم (Sodium Bicarbonate)',
+                'آسیکلوویر (Acyclovir)',
+                'سفامندول (Cefamandole)',
+                'آلتپلاز (Alteplase)',
+                'ایندومتاسین (Indomethacin)',
+                'پنتوباربیتال (Pentobarbital)'
+            ]
+        },
+        compatNotes: 'دوبوتامین با اکثر داروهای مراقبت ویژه سازگار است. از محلول‌های قلیایی و اکسنده‌ها اجتناب شود.',
+        administrationNotes: [
+            'دوز معمول: ۲–۲۰ میکروگرم/کیلوگرم/دقیقه',
+            'دوز بالا (>۱۵): ریسک تاکیکاردی افزایش می‌یابد',
+            'تیتراسیون آهسته بر اساس پاسخ همودینامیک',
+            'قطع تدریجی برای جلوگیری از هیپوتانسیون ریباند',
+            'در تاکیکاردی یا آریتمی‌های فوق‌بطنی با احتیاط استفاده شود'
+        ],
+        monitoring: [
+            'فشار خون مداوم (آرتریال لاین ترجیحی)',
+            'ضربان قلب و ریتم قلبی پیوسته',
+            'برون ده قلبی و SVR (در صورت وجود پولمونری کاتتر)',
+            'دیورز ادراری',
+            'علائم پرفیوژن بافتی (لاکتات، رنگ پوست)',
+            'پایش اکستراوزاسیون'
+        ],
+        preparationSteps: [
+            'تایید دستور پزشک',
+            'آماده کردن آمپول ۲۵۰ میلی‌گرمی دوبوتامین',
+            'اضافه کردن به ۲۵۰ میلی‌لیتر D5W (غلظت: ۱ میلی‌گرم/مل)',
+            'محاسبه سرعت بر اساس وزن بیمار',
+            'تنظیم پمپ انفوزیون',
+            'پایش فشار خون و ضربان قلب هر ۵ دقیقه در شروع'
+        ],
+        specialInstructions: 'دوبوتامین یک آمین سمپاتومیمتیک مستقیم است — در صورت کاردیومیوپاتی هیپرتروفیک انسدادی (HOCM) ممنوع است. در AF ممکن است AV Conduction را تسریع کند.'
+    },
+
 };
 
 function searchDrugs(query) {
