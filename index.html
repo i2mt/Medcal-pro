@@ -801,6 +801,78 @@
                             </div>
                         </div>
 
+                        <!-- Oxygen Cylinder Calculator -->
+                        <div class="accordion-item">
+                            <button class="accordion-header" onclick="toggleAccordion(this)">
+                                <div class="accordion-icon-wrap" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8)"><i class="fas fa-lungs"></i></div>
+                                <div class="accordion-title-wrap">
+                                    <span class="accordion-title">کپسول اکسیژن</span>
+                                    <span class="accordion-sub">محاسبه مدت زمان کپسول اکسیژن</span>
+                                </div>
+                                <i class="fas fa-chevron-down accordion-chevron"></i>
+                            </button>
+                            <div class="accordion-body">
+                                <div class="oxy-calc">
+                                    <div class="control-group">
+                                        <label><i class="fas fa-gauge-high"></i> ظرفیت و فشار کپسول</label>
+                                        <div class="calc-toggles-stack">
+                                            <div class="calc-toggle-item">
+                                                <div class="oxy-input-row">
+                                                    <span class="oxy-label">حجم کپسول</span>
+                                                    <div class="oxy-field">
+                                                        <input type="text" inputmode="decimal" id="oxyCylinderSize" class="oxy-input" placeholder="۱۰">
+                                                        <span class="oxy-unit">لیتر</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="calc-toggle-item">
+                                                <div class="oxy-input-row">
+                                                    <span class="oxy-label">فشار فعلی گاز</span>
+                                                    <div class="oxy-field">
+                                                        <input type="text" inputmode="decimal" id="oxyPressure" class="oxy-input" placeholder="۱۵۰">
+                                                        <span class="oxy-unit">bar</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="calc-toggle-item">
+                                                <div class="oxy-input-row">
+                                                    <span class="oxy-label">جریان اکسیژن</span>
+                                                    <div class="oxy-field">
+                                                        <input type="text" inputmode="decimal" id="oxyFlow" class="oxy-input" placeholder="۴">
+                                                        <span class="oxy-unit">L/min</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Cylinder size quick picks -->
+                                    <div class="control-group" style="margin-top:6px;">
+                                        <label><i class="fas fa-cylinder"></i> سایز کپسول متداول</label>
+                                        <div class="manual-volume-presets" id="oxySizePresets">
+                                            <button class="volume-preset-btn" data-oxysize="2"><span class="number">۲</span><span class="unit-text">L</span></button>
+                                            <button class="volume-preset-btn active" data-oxysize="5"><span class="number">۵</span><span class="unit-text">L</span></button>
+                                            <button class="volume-preset-btn" data-oxysize="10"><span class="number">۱۰</span><span class="unit-text">L</span></button>
+                                            <button class="volume-preset-btn" data-oxysize="20"><span class="number">۲۰</span><span class="unit-text">L</span></button>
+                                            <button class="volume-preset-btn" data-oxysize="40"><span class="number">۴۰</span><span class="unit-text">L</span></button>
+                                        </div>
+                                    </div>
+                                    <button class="calculate-btn-enhanced gradient" onclick="calculateOxygen()" style="margin-top:10px;">
+                                        <i class="fas fa-calculator"></i><span>محاسبه</span>
+                                    </button>
+                                    <div class="oxy-result" id="oxyResult" style="display:none;">
+                                        <div class="oxy-result-main">
+                                            <div class="oxy-result-value" id="oxyDuration">—</div>
+                                            <div class="oxy-result-label">مدت زمان کپسول</div>
+                                        </div>
+                                        <div class="oxy-result-details">
+                                            <div class="oxy-detail"><i class="fas fa-flask"></i><span>حجم کل گاز: <strong id="oxyTotalVol">—</strong> لیتر</span></div>
+                                            <div class="oxy-detail"><i class="fas fa-triangle-exclamation"></i><span>توجه: ۱۰٪ ذخیره ایمنی در نظر گرفته شده</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Burns TBSA -->
                         <div class="accordion-item">
                             <button class="accordion-header" onclick="toggleAccordion(this)">
@@ -1354,6 +1426,34 @@
                                     </div>
                                     <div class="converter-result" id="weightResult"></div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Pressure Converter -->
+                        <div class="accordion-item">
+                            <button class="accordion-header" onclick="toggleAccordion(this)">
+                                <div class="accordion-icon-wrap" style="background:linear-gradient(135deg,#0ea5e9,#6366f1)"><i class="fas fa-gauge"></i></div>
+                                <div class="accordion-title-wrap">
+                                    <span class="accordion-title">مبدل فشار</span>
+                                    <span class="accordion-sub">PSI ↔ mmHg ↔ cmH₂O ↔ bar ↔ kPa</span>
+                                </div>
+                                <i class="fas fa-chevron-down accordion-chevron"></i>
+                            </button>
+                            <div class="accordion-body">
+                                <div class="bidir-converter">
+                                    <div class="converter-input-group">
+                                        <input type="text" inputmode="decimal" id="pressureValue" placeholder="مقدار" class="converter-input" oninput="convertPressure()">
+                                        <select id="pressureUnit" class="converter-select" onchange="convertPressure()">
+                                            <option value="psi">PSI</option>
+                                            <option value="mmhg">mmHg</option>
+                                            <option value="cmh2o">cmH₂O</option>
+                                            <option value="bar">bar</option>
+                                            <option value="kpa">kPa</option>
+                                            <option value="atm">atm</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="converter-result" id="pressureResult"></div>
                             </div>
                         </div>
                     </div>
