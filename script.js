@@ -388,7 +388,14 @@ function setupSimpleInputHandling() {
         input.addEventListener('click', function() { this.select(); });
     });
 
-    const calculatorInputs = [DOM.doctorOrder, DOM.patientWeight, DOM.customVolume];
+    const calculatorInputs = [
+        DOM.doctorOrder, DOM.patientWeight, DOM.customVolume,
+        document.getElementById('customAmountInput'),
+        document.getElementById('manualDrugAmount'),
+        document.getElementById('manualDesiredDose'),
+        document.getElementById('manualPatientWeight'),
+        document.getElementById('manualCustomVolume'),
+    ].filter(Boolean);
     calculatorInputs.forEach(input => {
         if (!input) return;
         input.addEventListener('focus', function() { this.select(); });
@@ -771,6 +778,7 @@ function initializeApp() {
     setupRASS();
     setupBraden();
     setupMorse();
+    setupOxygenCalculator();
     setupThemePicker();
     setupUpdateDetection();
     setupThemeModeListener();
@@ -1170,12 +1178,10 @@ function calculateInfusion() {
 
     let desiredDosePerHour;
 
-    // Parse unit to drive conversion — avoids brittle drug-ID switch statements
+    // Parse units to drive all conversion logic
     const stdUnit = drug.standardUnit || '';
-    const isPerMin = stdUnit.includes('/min');
-    const isWeightBased = stdUnit.includes('/kg');
-    const doseInMcg = stdUnit.startsWith('mcg');
     const ampouleInMg = (drug.ampouleOptions[0]?.unit || '') === 'mg';
+    let doseAlreadyNormalized = false;
 
     if (drug.weightBased && drug.weightBased.active && AppState.useWeight) {
         let weightValue;
@@ -1192,13 +1198,31 @@ function calculateInfusion() {
         }
         DOM.patientWeight.style.borderColor = '';
         AppState.patientWeight = weightValue;
-        // e.g. mcg/kg/min → ×weight×60; mcg/kg/h → ×weight; units/kg/h → ×weight
-        desiredDosePerHour = doseValue * weightValue * (isPerMin ? 60 : 1);
+
+        // Use weightBased.unit for the weight branch — it reflects what the user actually enters
+        const wbUnit = drug.weightBased.unit || stdUnit;
+        const wbPerMin = wbUnit.includes('/min');
+        const wbInMcg  = wbUnit.startsWith('mcg');
+
+        // Convert dose (wbUnit) → drug storage unit per hour
+        let dosePerHour = doseValue * weightValue * (wbPerMin ? 60 : 1);
+        // If wb dose is in mcg but ampoule is in mg → convert to mg/h now;
+        // flag so concentration step doesn't double-convert
+        if (wbInMcg && ampouleInMg) {
+            dosePerHour /= 1000;
+            doseAlreadyNormalized = true;
+        }
+        desiredDosePerHour = dosePerHour;
+
     } else {
         AppState.patientWeight = null;
-        // e.g. mg/min or mcg/min → ×60; mg/h or units/h → ×1
+        const isPerMin = stdUnit.includes('/min');
+        // Non-weight: mg/min or mcg/min → ×60; mg/h or units/h → ×1
         desiredDosePerHour = doseValue * (isPerMin ? 60 : 1);
     }
+
+    // doseInMcg used for concentration unit conversion below
+    const doseInMcg = stdUnit.startsWith('mcg');
 
     if (AppState.customVolume) {
         let customVol;
@@ -1232,7 +1256,8 @@ function calculateInfusion() {
     let desiredDoseForCalculation = desiredDosePerHour;
 
     // If dose unit is mcg but ampoule/drug is stored in mg → convert drug to mcg for concentration
-    if (doseInMcg && ampouleInMg) {
+    // Skip if weight branch already normalized dose to mg (prevents double-conversion)
+    if (doseInMcg && ampouleInMg && !doseAlreadyNormalized) {
         totalDrugForCalculation = totalDrug * 1000;
         concentrationForCalculation = totalDrugForCalculation / AppState.solutionVolume;
     }
@@ -3907,3 +3932,68 @@ function resetMorse() {
     if (box) box.style.display = 'none';
     haptic(30);
 }
+
+// ============================================
+// OXYGEN CYLINDER CALCULATOR
+// ============================================
+function setupOxygenCalculator() {
+    const presets = document.querySelectorAll('#oxySizePresets .volume-preset-btn');
+    const sizeInput = document.getElementById('oxyCylinderSize');
+    presets.forEach(btn => {
+        btn.addEventListener('click', function() {
+            presets.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            if (sizeInput) {
+                sizeInput.value = this.dataset.oxysize;
+                sizeInput.dataset.numericValue = this.dataset.oxysize;
+            }
+            fixVolumeButtonColors();
+        });
+    });
+    // Wire Persian input normalization
+    ['oxyCylinderSize','oxyPressure','oxyFlow'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', function() {
+            const normalized = PersianNumbers.toLatin(this.value);
+            if (normalized !== this.value) this.value = normalized;
+        });
+    });
+    // Set default size
+    if (sizeInput) sizeInput.value = '5';
+}
+
+window.calculateOxygen = function() {
+    const cylinderSize = PersianNumbers.parseNumber(document.getElementById('oxyCylinderSize')?.value);
+    const pressure     = PersianNumbers.parseNumber(document.getElementById('oxyPressure')?.value);
+    const flow         = PersianNumbers.parseNumber(document.getElementById('oxyFlow')?.value);
+    const resultBox    = document.getElementById('oxyResult');
+
+    if (!cylinderSize || isNaN(cylinderSize) || cylinderSize <= 0) { showToast('خطا', 'حجم کپسول را وارد کنید', 'error'); return; }
+    if (!pressure     || isNaN(pressure)     || pressure <= 0)     { showToast('خطا', 'فشار کپسول را وارد کنید', 'error'); return; }
+    if (!flow         || isNaN(flow)         || flow <= 0)         { showToast('خطا', 'جریان اکسیژن را وارد کنید', 'error'); return; }
+
+    // Total gas volume = cylinder volume (L) × pressure (bar)
+    // 1 bar ≈ 1 atm for practical purposes; at atmospheric pressure (1 bar) the gas expands to pressure × size liters
+    const totalVolume = cylinderSize * pressure;
+    // Apply 10% safety reserve — don't use the last 10%
+    const usableVolume = totalVolume * 0.9;
+    const durationMinutes = usableVolume / flow;
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = Math.round(durationMinutes % 60);
+
+    const durationEl = document.getElementById('oxyDuration');
+    const totalVolEl = document.getElementById('oxyTotalVol');
+
+    if (durationEl) {
+        if (hours > 0) {
+            durationEl.textContent = `${hours} ساعت و ${minutes} دقیقه`;
+        } else {
+            durationEl.textContent = `${minutes} دقیقه`;
+        }
+    }
+    if (totalVolEl) totalVolEl.textContent = totalVolume.toFixed(0);
+    if (resultBox) resultBox.style.display = 'block';
+    haptic(40);
+    setTimeout(() => resultBox?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+};
