@@ -269,7 +269,7 @@ const drugDatabase = {
         category: 'Opioid Analgesic',
         defaultAmpoules: 1,
         ampouleOptions: [
-            { strength: 500, unit: 'mcg', volume: 10, label: '500 mcg in 10 mL' }
+            { strength: 500, unit: 'mcg', volume: 10, label: '0.5 mg in 10 mL' }
         ],
         defaultSolutionVolumes: { 
             syringe: [10, 20, 50], 
@@ -764,7 +764,8 @@ const drugDatabase = {
         category: 'Alpha/Beta Blocker',
         defaultAmpoules: 1,
         ampouleOptions: [
-            { strength: 100, unit: 'mg', volume: 20, label: '100 mg in 10 mL' }
+            { strength: 100, unit: 'mg', volume: 20, label: '100 mg in 20 mL' }
+             { strength: 20, unit: 'mg', volume: 4, label: '20 mg in 4 mL' }
         ],
         defaultSolutionVolumes: { 
             syringe: [10, 20, 50], 
