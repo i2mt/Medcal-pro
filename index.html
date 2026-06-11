@@ -849,11 +849,11 @@
                                     <div class="control-group" style="margin-top:6px;">
                                         <label><i class="fas fa-cylinder"></i> سایز کپسول متداول</label>
                                         <div class="manual-volume-presets" id="oxySizePresets">
-                                            <button class="volume-preset-btn" data-oxysize="2"><span class="number">۲</span><span class="unit-text">L</span></button>
-                                            <button class="volume-preset-btn active" data-oxysize="5"><span class="number">۵</span><span class="unit-text">L</span></button>
-                                            <button class="volume-preset-btn" data-oxysize="10"><span class="number">۱۰</span><span class="unit-text">L</span></button>
-                                            <button class="volume-preset-btn" data-oxysize="20"><span class="number">۲۰</span><span class="unit-text">L</span></button>
-                                            <button class="volume-preset-btn" data-oxysize="40"><span class="number">۴۰</span><span class="unit-text">L</span></button>
+                                            <button class="volume-preset-btn" data-oxysize="2"><span class="number">2</span><span class="unit-text">L</span></button>
+                                            <button class="volume-preset-btn active" data-oxysize="5"><span class="number">5</span><span class="unit-text">L</span></button>
+                                            <button class="volume-preset-btn" data-oxysize="10"><span class="number">10</span><span class="unit-text">L</span></button>
+                                            <button class="volume-preset-btn" data-oxysize="20"><span class="number">20</span><span class="unit-text">L</span></button>
+                                            <button class="volume-preset-btn" data-oxysize="40"><span class="number">40</span><span class="unit-text">L</span></button>
                                         </div>
                                     </div>
                                     <button class="calculate-btn-enhanced gradient" onclick="calculateOxygen()" style="margin-top:10px;">
@@ -1435,22 +1435,35 @@
                                 <div class="accordion-icon-wrap" style="background:linear-gradient(135deg,#0ea5e9,#6366f1)"><i class="fas fa-gauge"></i></div>
                                 <div class="accordion-title-wrap">
                                     <span class="accordion-title">مبدل فشار</span>
-                                    <span class="accordion-sub">PSI ↔ mmHg ↔ cmH₂O ↔ bar ↔ kPa</span>
+                                    <span class="accordion-sub">PSI ↔ mmHg ↔ cmH₂O ↔ bar — Live</span>
                                 </div>
                                 <i class="fas fa-chevron-down accordion-chevron"></i>
                             </button>
                             <div class="accordion-body">
-                                <div class="bidir-converter">
-                                    <div class="converter-input-group">
-                                        <input type="text" inputmode="decimal" id="pressureValue" placeholder="مقدار" class="converter-input" oninput="convertPressure()">
-                                        <select id="pressureUnit" class="converter-select" onchange="convertPressure()">
-                                            <option value="psi">PSI</option>
-                                            <option value="mmhg">mmHg</option>
-                                            <option value="cmh2o">cmH₂O</option>
-                                            <option value="bar">bar</option>
-                                            <option value="kpa">kPa</option>
-                                            <option value="atm">atm</option>
-                                        </select>
+                                <div class="bidir-converter" style="flex-wrap:wrap;gap:8px;">
+                                    <div class="bidir-field">
+                                        <label class="bidir-label">PSI</label>
+                                        <input type="number" id="pressurePSI" placeholder="14.7" inputmode="decimal" step="any" oninput="convertPressureLive('psi')">
+                                    </div>
+                                    <div class="bidir-arrow"><i class="fas fa-arrow-right-arrow-left"></i></div>
+                                    <div class="bidir-field">
+                                        <label class="bidir-label">mmHg</label>
+                                        <input type="number" id="pressureMMHG" placeholder="760" inputmode="decimal" step="any" oninput="convertPressureLive('mmhg')">
+                                    </div>
+                                    <div class="bidir-arrow"><i class="fas fa-arrow-right-arrow-left"></i></div>
+                                    <div class="bidir-field">
+                                        <label class="bidir-label">cmH₂O</label>
+                                        <input type="number" id="pressureCMH2O" placeholder="1034" inputmode="decimal" step="any" oninput="convertPressureLive('cmh2o')">
+                                    </div>
+                                    <div class="bidir-arrow"><i class="fas fa-arrow-right-arrow-left"></i></div>
+                                    <div class="bidir-field">
+                                        <label class="bidir-label">bar</label>
+                                        <input type="number" id="pressureBAR" placeholder="1.013" inputmode="decimal" step="any" oninput="convertPressureLive('bar')">
+                                    </div>
+                                    <div class="bidir-arrow"><i class="fas fa-arrow-right-arrow-left"></i></div>
+                                    <div class="bidir-field">
+                                        <label class="bidir-label">kPa</label>
+                                        <input type="number" id="pressureKPA" placeholder="101.3" inputmode="decimal" step="any" oninput="convertPressureLive('kpa')">
                                     </div>
                                 </div>
                                 <div class="converter-result" id="pressureResult"></div>
