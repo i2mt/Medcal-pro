@@ -468,3 +468,39 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// ============================================
+// PRESSURE CONVERTER
+// ============================================
+function convertPressure() {
+    const raw = document.getElementById('pressureValue')?.value;
+    const unit = document.getElementById('pressureUnit')?.value;
+    const resultDiv = document.getElementById('pressureResult');
+    if (!resultDiv) return;
+
+    const value = PersianNumbers.parseNumber(raw || '');
+    if (!raw || isNaN(value)) { resultDiv.style.display = 'none'; return; }
+
+    // All values relative to 1 PSI
+    const toPSI = { psi: 1, mmhg: 1/51.7149, cmh2o: 1/70.3069, bar: 1/0.0689476, kpa: 1/6.89476, atm: 1/0.068046 };
+    const fromPSI = { psi: 1, mmhg: 51.7149, cmh2o: 70.3069, bar: 0.0689476, kpa: 6.89476, atm: 0.068046 };
+
+    const valueInPSI = value / toPSI[unit];
+
+    const labels = { psi: 'PSI', mmhg: 'mmHg', cmh2o: 'cmH₂O', bar: 'bar', kpa: 'kPa', atm: 'atm' };
+    const order = ['psi', 'mmhg', 'cmh2o', 'bar', 'kpa', 'atm'];
+
+    const rows = order
+        .filter(u => u !== unit)
+        .map(u => {
+            const converted = valueInPSI * fromPSI[u];
+            const decimals = converted >= 100 ? 1 : converted >= 10 ? 2 : 3;
+            return `<div class="pressure-row">
+                <span class="pressure-unit-label">${labels[u]}</span>
+                <span class="pressure-value latin-inline">${converted.toFixed(decimals)}</span>
+            </div>`;
+        }).join('');
+
+    resultDiv.innerHTML = `<div class="pressure-grid">${rows}</div>`;
+    resultDiv.style.display = 'block';
+}
