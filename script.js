@@ -3246,20 +3246,70 @@ function setupThemePicker() {
 // ============================================
 // ACCORDION
 // ============================================
+// Floating accordion close bar — appears at top when user scrolls past header
+let _accordionFloatBar = null;
+let _accordionScrollHandler = null;
+
+function removeAccordionFloatBar() {
+    if (_accordionFloatBar) { _accordionFloatBar.remove(); _accordionFloatBar = null; }
+    if (_accordionScrollHandler) {
+        const pane = document.querySelector('.tab-pane.active');
+        if (pane) pane.removeEventListener('scroll', _accordionScrollHandler);
+        _accordionScrollHandler = null;
+    }
+}
+
+function addAccordionFloatBar(item, headerBtn) {
+    removeAccordionFloatBar();
+
+    // Get title from the header
+    const titleEl = headerBtn.querySelector('.accordion-title');
+    const iconEl  = headerBtn.querySelector('.accordion-icon-wrap i');
+    const title   = titleEl ? titleEl.textContent : 'بستن';
+    const iconClass = iconEl ? iconEl.className : 'fas fa-chevron-up';
+
+    const bar = document.createElement('div');
+    bar.className = 'accordion-float-bar';
+    bar.innerHTML = `
+        <div class="accordion-float-left">
+            <i class="${iconClass}"></i>
+            <span>${title}</span>
+        </div>
+        <button class="accordion-float-close"><i class="fas fa-times"></i> بستن</button>
+    `;
+    bar.querySelector('.accordion-float-close').addEventListener('click', () => {
+        toggleAccordion(headerBtn);
+    });
+    document.body.appendChild(bar);
+    _accordionFloatBar = bar;
+
+    // Show/hide based on whether header is out of view
+    const pane = document.querySelector('.tab-pane.active') || window;
+    _accordionScrollHandler = () => {
+        const headerRect = headerBtn.getBoundingClientRect();
+        // Header scrolled above visible area
+        if (headerRect.bottom < 60) {
+            bar.classList.add('visible');
+        } else {
+            bar.classList.remove('visible');
+        }
+    };
+    pane.addEventListener('scroll', _accordionScrollHandler, { passive: true });
+}
+
 function toggleAccordion(headerBtn) {
     const item = headerBtn.closest('.accordion-item');
     const body = item.querySelector('.accordion-body');
     const chevron = headerBtn.querySelector('.accordion-chevron');
     const isOpen = item.classList.contains('open');
 
+    // Close any other open accordion
     document.querySelectorAll('.accordion-item.open').forEach(openItem => {
         if (openItem !== item) {
             openItem.classList.remove('open');
             openItem.querySelector('.accordion-body').style.maxHeight = '0';
             openItem.querySelector('.accordion-body').style.padding = '0';
             openItem.querySelector('.accordion-chevron').style.transform = '';
-            const strip = openItem.querySelector('.accordion-close-strip');
-            if (strip) strip.remove();
         }
     });
 
@@ -3268,9 +3318,7 @@ function toggleAccordion(headerBtn) {
         body.style.maxHeight = '0';
         body.style.padding = '0';
         chevron.style.transform = '';
-        const strip = item.querySelector('.accordion-close-strip');
-        if (strip) strip.remove();
-        // Android back: pop the state we pushed
+        removeAccordionFloatBar();
         if (history.state && history.state.accordionOpen) history.back();
     } else {
         item.classList.add('open');
@@ -3278,36 +3326,24 @@ function toggleAccordion(headerBtn) {
         body.style.padding = '0 0 14px';
         chevron.style.transform = 'rotate(180deg)';
         haptic(20);
-
-        // Add sticky close strip inside the body
-        if (!item.querySelector('.accordion-close-strip')) {
-            const strip = document.createElement('button');
-            strip.className = 'accordion-close-strip';
-            strip.innerHTML = '<i class="fas fa-chevron-up"></i><span>بستن</span>';
-            strip.addEventListener('click', () => toggleAccordion(headerBtn));
-            body.insertBefore(strip, body.firstChild);
-        }
-
-        // Android back button support
+        addAccordionFloatBar(item, headerBtn);
         history.pushState({ accordionOpen: true }, '');
-
         setTimeout(() => item.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
     }
 }
 
-// Handle Android back button closing open accordion
-window.addEventListener('popstate', (e) => {
+// Android back button
+window.addEventListener('popstate', () => {
     const openItem = document.querySelector('.accordion-item.open');
     if (openItem) {
-        const headerBtn = openItem.querySelector('.accordion-header');
-        if (headerBtn) {
+        const hBtn = openItem.querySelector('.accordion-header');
+        if (hBtn) {
             openItem.classList.remove('open');
             const body = openItem.querySelector('.accordion-body');
             if (body) { body.style.maxHeight = '0'; body.style.padding = '0'; }
-            const chevron = headerBtn.querySelector('.accordion-chevron');
-            if (chevron) chevron.style.transform = '';
-            const strip = openItem.querySelector('.accordion-close-strip');
-            if (strip) strip.remove();
+            const chev = hBtn.querySelector('.accordion-chevron');
+            if (chev) chev.style.transform = '';
+            removeAccordionFloatBar();
         }
     }
 });
@@ -3655,33 +3691,81 @@ window.updateDoseRangeIndicator = updateDoseRangeIndicator;
 // USER NAME & GREETING BANNER
 // ============================================
 function getGreeting() {
-    const h = new Date().getHours();
-    const name = localStorage.getItem('userName') || '';
+    const h    = new Date().getHours();
+    const raw  = (localStorage.getItem('userName') || '').trim();
+    // Wrap name in a LTR-isolated span so Latin names don't flip the sentence
+    // We use unicode isolate marks instead of HTML since this goes into textContent
+    const name = raw ? '\u2066' + raw + '\u2069' : '';
 
-    const morningMessages = [
-        name ? `صبح بخیر ${name} عزیز 🌅` : 'صبح بخیر! روز پرانرژی‌ای داشته باشید 🌅',
-        name ? `سلام ${name}! امیدوارم شیفت امروز آروم باشه ☀️` : 'سلام! امیدوارم شیفت امروز آروم باشه ☀️',
-        name ? `صبح بخیر ${name} 🌤️ FoxiMed در خدمت شماست` : 'صبح بخیر 🌤️ FoxiMed در خدمت شماست',
+    // Helper: build a sentence safely — name always isolated, app name always LTR-isolated
+    const app = '\u2066FoxiMed\u2069';
+
+    const morning = name ? [
+        `صبح بخیر ${name} عزیز 🌅`,
+        `سلام ${name}! امیدوارم شیفت امروز آروم باشه ☀️`,
+        `صبح بخیر ${name} 🌤️ — ${app} در خدمت شماست`,
+        `سلام ${name}! صبح‌تون بخیر، شیفت پرانرژی داشته باشید 💪`,
+        `${name} عزیز، صبح بخیر 🌸 آماده‌ی یه شیفت خوب هستیم`,
+        `خوش اومدی ${name} 🌅 بریم شروع کنیم`,
+    ] : [
+        `صبح بخیر! روز پرانرژی‌ای داشته باشید 🌅`,
+        `صبح بخیر 🌤️ — ${app} در خدمت شماست`,
+        `سلام! امیدوارم شیفت امروز آروم باشه ☀️`,
+        `صبح بخیر! شیفت موفقی داشته باشید 💪`,
+        `خوش اومدید 🌸 — ${app} آماده‌ی محاسبه‌ست`,
+        `سلام! امروز هم ${app} کنارتونه 🌅`,
     ];
-    const afternoonMessages = [
-        name ? `ظهر بخیر ${name}! وسط شیفت همه چیز خوبه؟ 🌞` : 'ظهر بخیر! FoxiMed آماده محاسبه است 🌞',
-        name ? `سلام ${name}! بعدازظهر بخیر 💊` : 'ظهر بخیر! مراقب خودتون باشید 💊',
+
+    const afternoon = name ? [
+        `ظهر بخیر ${name}! وسط شیفت همه چیز خوبه؟ 🌞`,
+        `سلام ${name}! بعدازظهر بخیر 💊`,
+        `${name} عزیز، ظهرتون بخیر — بریم حساب کنیم 🌞`,
+        `سلام ${name}! نصف روز گذشت، ادامه بدیم 💉`,
+        `ظهر بخیر ${name}! ${app} اینجاست هر وقت خواستید 🌞`,
+    ] : [
+        `ظهر بخیر! ${app} آماده محاسبه است 🌞`,
+        `ظهر بخیر! مراقب خودتون باشید 💊`,
+        `سلام! نصف روز گذشت — ${app} اینجاست 🌞`,
+        `ظهر بخیر! شیفت بخیر پیش بره 💉`,
+        `سلام! ${app} همیشه آماده‌ست 🌞`,
     ];
-    const eveningMessages = [
-        name ? `عصر بخیر ${name}! شیفت عصر رو با آرامش طی کنید 🌆` : 'عصر بخیر! شیفت عصر رو با آرامش طی کنید 🌆',
-        name ? `سلام ${name}! عصر بخیر 🌇` : 'عصر بخیر! FoxiMed همراه شماست 🌇',
+
+    const evening = name ? [
+        `عصر بخیر ${name}! شیفت عصر رو با آرامش طی کنید 🌆`,
+        `سلام ${name}! عصر بخیر 🌇`,
+        `${name} عزیز، عصر بخیر — نزدیک پایان شیفت هستیم 🌆`,
+        `عصر بخیر ${name}! ${app} همراهتونه 🌇`,
+        `سلام ${name}! عصر خوبی داشته باشید ☕`,
+    ] : [
+        `عصر بخیر! شیفت عصر رو با آرامش طی کنید 🌆`,
+        `عصر بخیر! ${app} همراه شماست 🌇`,
+        `سلام! عصر بخیر — ${app} آماده‌ست 🌆`,
+        `عصر بخیر! مراقب خودتون باشید ☕`,
+        `سلام! نزدیک پایان شیفت هستیم 🌇`,
     ];
-    const nightMessages = [
-        name ? `شب بخیر ${name} 🌙 شیفت شب رو با موفقیت پشت سر بذارید` : 'شب بخیر 🌙 شیفت شب رو با موفقیت پشت سر بذارید',
-        name ? `سلام ${name}! مواظب خودتون باشید در شیفت شب ⭐` : 'شب بخیر! مواظب خودتون باشید ⭐',
-        name ? `${name} عزیز، شب بخیر 🌙 FoxiMed همیشه بیداره` : 'FoxiMed همیشه بیداره 🌙 شب بخیر',
+
+    const night = name ? [
+        `شب بخیر ${name} 🌙 شیفت شب رو با موفقیت پشت سر بذارید`,
+        `سلام ${name}! مواظب خودتون باشید در شیفت شب ⭐`,
+        `${name} عزیز، شب بخیر 🌙 — ${app} همیشه بیداره`,
+        `شب بخیر ${name}! شیفت شب سنگینه ولی شما پسش می‌زنید 💫`,
+        `سلام ${name}! شب بخیر — ${app} کنارتونه تا صبح 🌙`,
+        `${name} عزیز، مراقب خودتون باشید ستاره ⭐`,
+        `شب بخیر ${name}! امیدوارم شیفت آروم باشه 🌙`,
+    ] : [
+        `شب بخیر 🌙 شیفت شب رو با موفقیت پشت سر بذارید`,
+        `شب بخیر! مواظب خودتون باشید ⭐`,
+        `${app} همیشه بیداره 🌙 — شب بخیر`,
+        `شب بخیر! شیفت شب سنگینه ولی شما پسش می‌زنید 💫`,
+        `سلام! شب بخیر — ${app} کنارتونه تا صبح 🌙`,
+        `شب بخیر! امیدوارم شیفت آروم باشه ⭐`,
     ];
 
     let pool;
-    if (h >= 5 && h < 12) pool = morningMessages;
-    else if (h >= 12 && h < 17) pool = afternoonMessages;
-    else if (h >= 17 && h < 21) pool = eveningMessages;
-    else pool = nightMessages;
+    if      (h >= 5  && h < 12) pool = morning;
+    else if (h >= 12 && h < 17) pool = afternoon;
+    else if (h >= 17 && h < 21) pool = evening;
+    else                         pool = night;
 
     return pool[Math.floor(Math.random() * pool.length)];
 }
