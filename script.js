@@ -2964,28 +2964,96 @@ function showReverseTooltip() {
 // ============================================
 function setupOnboarding() {
     const overlay = document.getElementById('onboardingOverlay');
-    const doneBtn = document.getElementById('onboardingDoneBtn');
-    const skipBtn = document.getElementById('onboardingSkip');
     if (!overlay) return;
 
+    const slidesContainer = document.getElementById('tutorialSlides');
+    const dotsContainer = document.getElementById('tutorialDots');
+    const nextBtn = document.getElementById('tutorialNextBtn');
+    const skipBtn = document.getElementById('tutorialSkipBtn');
+    const dontShowChk = document.getElementById('onboardingDontShow');
+
+    const slides = slidesContainer ? Array.from(slidesContainer.querySelectorAll('.tutorial-slide')) : [];
+    let current = 0;
+
+    // Build dots
+    if (dotsContainer && slides.length) {
+        slides.forEach((_, i) => {
+            const dot = document.createElement('span');
+            dot.className = 'tutorial-dot' + (i === 0 ? ' active' : '');
+            dot.addEventListener('click', () => goTo(i));
+            dotsContainer.appendChild(dot);
+        });
+    }
+
+    function updateDots() {
+        if (!dotsContainer) return;
+        dotsContainer.querySelectorAll('.tutorial-dot').forEach((d, i) => {
+            d.classList.toggle('active', i === current);
+        });
+    }
+
+    function goTo(idx) {
+        if (!slides.length) return;
+        slides[current].classList.remove('active');
+        current = Math.max(0, Math.min(idx, slides.length - 1));
+        slides[current].classList.add('active');
+        updateDots();
+        const isLast = current === slides.length - 1;
+        if (nextBtn) {
+            nextBtn.innerHTML = isLast
+                ? '<i class="fas fa-check"></i> <span>شروع</span>'
+                : '<span>بعدی</span> <i class="fas fa-arrow-left"></i>';
+        }
+        haptic(15);
+    }
+
+    function closeTutorial() {
+        overlay.classList.remove('visible');
+        setTimeout(() => { overlay.style.display = 'none'; }, 400);
+        if (dontShowChk && dontShowChk.checked) localStorage.setItem('onboardingSeen', 'true');
+    }
+
+    if (nextBtn) nextBtn.addEventListener('click', () => {
+        if (current < slides.length - 1) goTo(current + 1);
+        else { haptic(30); closeTutorial(); }
+    });
+    if (skipBtn) skipBtn.addEventListener('click', () => { closeTutorial(); });
+    overlay.querySelector('.onboarding-backdrop')?.addEventListener('click', closeTutorial);
+
+    // Touch swipe support on slides
+    let touchStartX = 0;
+    if (slidesContainer) {
+        slidesContainer.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+        slidesContainer.addEventListener('touchend', e => {
+            const diff = e.changedTouches[0].screenX - touchStartX;
+            if (Math.abs(diff) > 50) goTo(current + (diff < 0 ? 1 : -1));
+        }, { passive: true });
+    }
+
+    // Show if not seen before
     const seen = localStorage.getItem('onboardingSeen');
     if (!seen) {
         setTimeout(() => {
             overlay.style.display = 'flex';
             requestAnimationFrame(() => overlay.classList.add('visible'));
-        }, 1200);
+        }, 3500); // after loading screen and greeting
     }
-
-    function close(dontShow) {
-        overlay.classList.remove('visible');
-        setTimeout(() => { overlay.style.display = 'none'; }, 400);
-        if (dontShow) localStorage.setItem('onboardingSeen', 'true');
-    }
-
-    if (doneBtn) doneBtn.addEventListener('click', () => { haptic(30); close(true); });
-    if (skipBtn) skipBtn.addEventListener('click', () => close(true));
-    overlay.querySelector('.onboarding-backdrop')?.addEventListener('click', () => close(false));
 }
+
+// Expose tutorial for settings "show again" button
+window.showTutorial = function() {
+    const overlay = document.getElementById('onboardingOverlay');
+    if (!overlay) return;
+    // Reset to slide 1
+    const slides = overlay.querySelectorAll('.tutorial-slide');
+    slides.forEach((s, i) => s.classList.toggle('active', i === 0));
+    const dots = overlay.querySelectorAll('.tutorial-dot');
+    dots.forEach((d, i) => d.classList.toggle('active', i === 0));
+    const nextBtn = document.getElementById('tutorialNextBtn');
+    if (nextBtn) nextBtn.innerHTML = '<span>بعدی</span> <i class="fas fa-arrow-left"></i>';
+    overlay.style.display = 'flex';
+    requestAnimationFrame(() => overlay.classList.add('visible'));
+};
 
 // ============================================
 // UPDATE AVAILABLE BANNER
@@ -3190,6 +3258,8 @@ function toggleAccordion(headerBtn) {
             openItem.querySelector('.accordion-body').style.maxHeight = '0';
             openItem.querySelector('.accordion-body').style.padding = '0';
             openItem.querySelector('.accordion-chevron').style.transform = '';
+            const strip = openItem.querySelector('.accordion-close-strip');
+            if (strip) strip.remove();
         }
     });
 
@@ -3198,15 +3268,49 @@ function toggleAccordion(headerBtn) {
         body.style.maxHeight = '0';
         body.style.padding = '0';
         chevron.style.transform = '';
+        const strip = item.querySelector('.accordion-close-strip');
+        if (strip) strip.remove();
+        // Android back: pop the state we pushed
+        if (history.state && history.state.accordionOpen) history.back();
     } else {
         item.classList.add('open');
         body.style.maxHeight = body.scrollHeight + 2000 + 'px';
-        body.style.padding = '12px 14px 14px';
+        body.style.padding = '0 0 14px';
         chevron.style.transform = 'rotate(180deg)';
         haptic(20);
-        setTimeout(() => item.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 200);
+
+        // Add sticky close strip inside the body
+        if (!item.querySelector('.accordion-close-strip')) {
+            const strip = document.createElement('button');
+            strip.className = 'accordion-close-strip';
+            strip.innerHTML = '<i class="fas fa-chevron-up"></i><span>بستن</span>';
+            strip.addEventListener('click', () => toggleAccordion(headerBtn));
+            body.insertBefore(strip, body.firstChild);
+        }
+
+        // Android back button support
+        history.pushState({ accordionOpen: true }, '');
+
+        setTimeout(() => item.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
     }
 }
+
+// Handle Android back button closing open accordion
+window.addEventListener('popstate', (e) => {
+    const openItem = document.querySelector('.accordion-item.open');
+    if (openItem) {
+        const headerBtn = openItem.querySelector('.accordion-header');
+        if (headerBtn) {
+            openItem.classList.remove('open');
+            const body = openItem.querySelector('.accordion-body');
+            if (body) { body.style.maxHeight = '0'; body.style.padding = '0'; }
+            const chevron = headerBtn.querySelector('.accordion-chevron');
+            if (chevron) chevron.style.transform = '';
+            const strip = openItem.querySelector('.accordion-close-strip');
+            if (strip) strip.remove();
+        }
+    }
+});
 
 function refreshAccordion(el) {
     const body = el.closest('.accordion-body');
@@ -3552,10 +3656,34 @@ window.updateDoseRangeIndicator = updateDoseRangeIndicator;
 // ============================================
 function getGreeting() {
     const h = new Date().getHours();
-    if (h >= 5  && h < 12) return 'صبح بخیر';
-    if (h >= 12 && h < 17) return 'ظهر بخیر';
-    if (h >= 17 && h < 21) return 'عصر بخیر';
-    return 'شب بخیر';
+    const name = localStorage.getItem('userName') || '';
+
+    const morningMessages = [
+        name ? `صبح بخیر ${name} عزیز 🌅` : 'صبح بخیر! روز پرانرژی‌ای داشته باشید 🌅',
+        name ? `سلام ${name}! امیدوارم شیفت امروز آروم باشه ☀️` : 'سلام! امیدوارم شیفت امروز آروم باشه ☀️',
+        name ? `صبح بخیر ${name} 🌤️ FoxiMed در خدمت شماست` : 'صبح بخیر 🌤️ FoxiMed در خدمت شماست',
+    ];
+    const afternoonMessages = [
+        name ? `ظهر بخیر ${name}! وسط شیفت همه چیز خوبه؟ 🌞` : 'ظهر بخیر! FoxiMed آماده محاسبه است 🌞',
+        name ? `سلام ${name}! بعدازظهر بخیر 💊` : 'ظهر بخیر! مراقب خودتون باشید 💊',
+    ];
+    const eveningMessages = [
+        name ? `عصر بخیر ${name}! شیفت عصر رو با آرامش طی کنید 🌆` : 'عصر بخیر! شیفت عصر رو با آرامش طی کنید 🌆',
+        name ? `سلام ${name}! عصر بخیر 🌇` : 'عصر بخیر! FoxiMed همراه شماست 🌇',
+    ];
+    const nightMessages = [
+        name ? `شب بخیر ${name} 🌙 شیفت شب رو با موفقیت پشت سر بذارید` : 'شب بخیر 🌙 شیفت شب رو با موفقیت پشت سر بذارید',
+        name ? `سلام ${name}! مواظب خودتون باشید در شیفت شب ⭐` : 'شب بخیر! مواظب خودتون باشید ⭐',
+        name ? `${name} عزیز، شب بخیر 🌙 FoxiMed همیشه بیداره` : 'FoxiMed همیشه بیداره 🌙 شب بخیر',
+    ];
+
+    let pool;
+    if (h >= 5 && h < 12) pool = morningMessages;
+    else if (h >= 12 && h < 17) pool = afternoonMessages;
+    else if (h >= 17 && h < 21) pool = eveningMessages;
+    else pool = nightMessages;
+
+    return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function showGreetingBanner() {
@@ -3564,9 +3692,7 @@ function showGreetingBanner() {
     const closeBtn = document.getElementById('greetingClose');
     if (!banner || !textEl) return;
 
-    const name = localStorage.getItem('userName') || '';
-    const greeting = getGreeting();
-    textEl.textContent = name ? `${greeting}، ${name} عزیز 👋` : `${greeting} 👋`;
+    textEl.textContent = getGreeting();
 
     banner.style.display = 'flex';
     banner.classList.remove('banner-hiding');
