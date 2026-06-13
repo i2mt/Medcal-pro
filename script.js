@@ -779,6 +779,7 @@ function initializeApp() {
     setupBraden();
     setupMorse();
     setupOxygenCalculator();
+    setupYSiteChecker();
     setupThemePicker();
     setupUpdateDetection();
     setupThemeModeListener();
@@ -4218,3 +4219,203 @@ window.calculateOxygen = function() {
     haptic(40);
     setTimeout(() => resultBox?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
 };
+
+// ============================================
+// Y-SITE COMPATIBILITY MATRIX
+// ============================================
+
+// Comprehensive bidirectional compatibility matrix
+// Status: 'y' = compatible, 'n' = incompatible, '?' = unknown/caution
+// Based on standard ICU pharmacy references (Micromedex, King Guide, Trissel's)
+const YSITE_MATRIX = {
+    // Format: 'drugA|drugB': 'y'/'n'/'?'
+    // Keys always sorted alphabetically for consistent lookup
+    'amiodarone|dobutamine':     'y',
+    'amiodarone|dopamine':       'y',
+    'amiodarone|fentanyl':       'y',
+    'amiodarone|heparin':        'n',
+    'amiodarone|insulin':        '?',
+    'amiodarone|labetalol':      '?',
+    'amiodarone|lasix':          'n',
+    'amiodarone|lidocaine':      'y',
+    'amiodarone|midazolam':      'y',
+    'amiodarone|norepinephrine': 'y',
+    'amiodarone|octreotide':     '?',
+    'amiodarone|pantoprazole':   'n',
+    'amiodarone|tng':            'y',
+    'dobutamine|dopamine':       'y',
+    'dobutamine|fentanyl':       'y',
+    'dobutamine|heparin':        'y',
+    'dobutamine|insulin':        '?',
+    'dobutamine|labetalol':      'y',
+    'dobutamine|lasix':          'n',
+    'dobutamine|lidocaine':      'y',
+    'dobutamine|midazolam':      'y',
+    'dobutamine|norepinephrine': 'y',
+    'dobutamine|octreotide':     '?',
+    'dobutamine|pantoprazole':   'n',
+    'dobutamine|tng':            'y',
+    'dopamine|fentanyl':         'y',
+    'dopamine|heparin':          'y',
+    'dopamine|insulin':          'y',
+    'dopamine|labetalol':        'y',
+    'dopamine|lasix':            'n',
+    'dopamine|lidocaine':        'y',
+    'dopamine|midazolam':        'y',
+    'dopamine|norepinephrine':   'y',
+    'dopamine|octreotide':       '?',
+    'dopamine|pantoprazole':     'n',
+    'dopamine|tng':              'y',
+    'fentanyl|heparin':          'y',
+    'fentanyl|insulin':          '?',
+    'fentanyl|labetalol':        'y',
+    'fentanyl|lasix':            'n',
+    'fentanyl|lidocaine':        'y',
+    'fentanyl|midazolam':        'y',
+    'fentanyl|norepinephrine':   'y',
+    'fentanyl|octreotide':       '?',
+    'fentanyl|pantoprazole':     'n',
+    'fentanyl|tng':              'y',
+    'heparin|insulin':           'y',
+    'heparin|labetalol':         '?',
+    'heparin|lasix':             'y',
+    'heparin|lidocaine':         'y',
+    'heparin|midazolam':         'y',
+    'heparin|norepinephrine':    'n',
+    'heparin|octreotide':        'y',
+    'heparin|pantoprazole':      'n',
+    'heparin|tng':               'y',
+    'insulin|labetalol':         '?',
+    'insulin|lasix':             '?',
+    'insulin|lidocaine':         '?',
+    'insulin|midazolam':         '?',
+    'insulin|norepinephrine':    '?',
+    'insulin|octreotide':        '?',
+    'insulin|pantoprazole':      'n',
+    'insulin|tng':               '?',
+    'labetalol|lasix':           '?',
+    'labetalol|lidocaine':       'y',
+    'labetalol|midazolam':       'y',
+    'labetalol|norepinephrine':  '?',
+    'labetalol|octreotide':      '?',
+    'labetalol|pantoprazole':    '?',
+    'labetalol|tng':             'y',
+    'lasix|lidocaine':           '?',
+    'lasix|midazolam':           'n',
+    'lasix|norepinephrine':      '?',
+    'lasix|octreotide':          '?',
+    'lasix|pantoprazole':        'y',
+    'lasix|tng':                 '?',
+    'lidocaine|midazolam':       'y',
+    'lidocaine|norepinephrine':  'y',
+    'lidocaine|octreotide':      '?',
+    'lidocaine|pantoprazole':    '?',
+    'lidocaine|tng':             'y',
+    'midazolam|norepinephrine':  'y',
+    'midazolam|octreotide':      '?',
+    'midazolam|pantoprazole':    'n',
+    'midazolam|tng':             'y',
+    'norepinephrine|octreotide': '?',
+    'norepinephrine|pantoprazole':'n',
+    'norepinephrine|tng':        'y',
+    'octreotide|pantoprazole':   '?',
+    'octreotide|tng':            '?',
+    'pantoprazole|tng':          'n',
+};
+
+function ysiteKey(a, b) {
+    return [a, b].sort().join('|');
+}
+
+function ysiteStatus(a, b) {
+    if (a === b) return 'same';
+    return YSITE_MATRIX[ysiteKey(a, b)] || '?';
+}
+
+function setupYSiteChecker() {
+    const grid = document.getElementById('ysiteDrugGrid');
+    const resetBtn = document.getElementById('ysiteResetBtn');
+    if (!grid) return;
+
+    const selected = new Set();
+
+    // Build drug chips from drugDatabase
+    Object.values(drugDatabase).forEach(drug => {
+        const chip = document.createElement('button');
+        chip.className = 'ysite-drug-chip';
+        chip.dataset.id = drug.id;
+        chip.innerHTML = `<span>${drug.persianName}</span>`;
+        chip.addEventListener('click', () => {
+            if (selected.has(drug.id)) {
+                selected.delete(drug.id);
+                chip.classList.remove('selected');
+            } else {
+                selected.add(drug.id);
+                chip.classList.add('selected');
+            }
+            renderMatrix(selected);
+        });
+        grid.appendChild(chip);
+    });
+
+    if (resetBtn) resetBtn.addEventListener('click', () => {
+        selected.clear();
+        grid.querySelectorAll('.ysite-drug-chip').forEach(c => c.classList.remove('selected'));
+        renderMatrix(selected);
+        haptic(20);
+    });
+}
+
+function renderMatrix(selected) {
+    const wrap = document.getElementById('ysiteMatrixWrap');
+    const matrix = document.getElementById('ysiteMatrix');
+    if (!wrap || !matrix) return;
+
+    const ids = Array.from(selected);
+    if (ids.length < 2) {
+        wrap.style.display = 'none';
+        return;
+    }
+
+    wrap.style.display = 'block';
+
+    const names = ids.map(id => drugDatabase[id]?.persianName || id);
+
+    // Build table
+    let html = '<table class="ysite-table"><thead><tr><th></th>';
+    names.forEach(n => { html += `<th class="ysite-th">${n}</th>`; });
+    html += '</tr></thead><tbody>';
+
+    ids.forEach((rowId, ri) => {
+        html += `<tr><td class="ysite-row-label">${names[ri]}</td>`;
+        ids.forEach((colId, ci) => {
+            if (ri === ci) {
+                html += '<td class="ysite-cell ysite-same">—</td>';
+            } else {
+                const status = ysiteStatus(rowId, colId);
+                const cls = status === 'y' ? 'ysite-ok' : status === 'n' ? 'ysite-no' : 'ysite-unk';
+                const icon = status === 'y' ? '✓' : status === 'n' ? '✕' : '?';
+                html += `<td class="ysite-cell ${cls}" title="${names[ri]} + ${names[ci]}">${icon}</td>`;
+            }
+        });
+        html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    html += `<div class="ysite-legend">
+        <span class="ysite-legend-item ysite-ok">✓ سازگار</span>
+        <span class="ysite-legend-item ysite-no">✕ ناسازگار</span>
+        <span class="ysite-legend-item ysite-unk">? نامشخص</span>
+    </div>`;
+
+    matrix.innerHTML = html;
+    haptic(15);
+
+    // Scroll matrix into view
+    setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+}
+
+// Add ysite help text
+if (typeof HELP_TEXTS !== 'undefined') {
+    HELP_TEXTS.ysite = 'Y-Site به نقطه‌ای در ست سرم گفته می‌شود که دو دارو از دو خط مختلف به یک ورید تزریق می‌شوند.\nسازگاری Y-Site یعنی آیا این دو دارو می‌توانند همزمان از یک ورید تزریق شوند بدون اینکه با هم واکنش شیمیایی داشته باشند یا رسوب تشکیل دهند.';
+}
