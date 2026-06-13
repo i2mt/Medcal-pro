@@ -1002,6 +1002,29 @@
                                 </div>
                             </div>
 
+                            <!-- Y-Site Compatibility Matrix -->
+                            <div class="accordion-item">
+                                <button class="accordion-header" onclick="toggleAccordion(this)">
+                                    <div class="accordion-icon-wrap" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb)"><i class="fas fa-vials"></i></div>
+                                    <div class="accordion-title-wrap">
+                                        <span class="accordion-title">سازگاری Y-Site
+                                            <button class="help-icon" data-help="ysite" style="pointer-events:auto;">ⓘ</button>
+                                        </span>
+                                        <span class="accordion-sub">Drug Compatibility Matrix</span>
+                                    </div>
+                                    <i class="fas fa-chevron-down accordion-chevron"></i>
+                                </button>
+                                <div class="accordion-body" id="ysiteAccordionBody">
+                                    <p class="ysite-intro">یک یا چند دارو انتخاب کنید تا سازگاری Y-Site بین آن‌ها بررسی شود.</p>
+                                    <div class="ysite-drug-grid" id="ysiteDrugGrid"></div>
+                                    <div class="ysite-matrix-wrap" id="ysiteMatrixWrap" style="display:none;">
+                                        <div class="ysite-matrix" id="ysiteMatrix"></div>
+                                    </div>
+                                    <button class="gcs-reset-btn" id="ysiteResetBtn" style="margin-top:12px;"><i class="fas fa-rotate-right"></i> شروع مجدد</button>
+                                </div>
+                            </div>
+
+
                             <!-- BSA -->
                             <div class="accordion-item">
                                 <button class="accordion-header" onclick="toggleAccordion(this)">
@@ -1187,39 +1210,7 @@
                             </div>
 
                             <!-- Y-Site Compatibility -->
-                            <div class="accordion-item">
-                                <button class="accordion-header" onclick="toggleAccordion(this)">
-                                    <div class="accordion-icon-wrap" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb)"><i class="fas fa-vials"></i></div>
-                                    <div class="accordion-title-wrap">
-                                        <span class="accordion-title">سازگاری Y-Site</span>
-                                        <span class="accordion-sub">Drug Compatibility Check</span>
-                                    </div>
-                                    <i class="fas fa-chevron-down accordion-chevron"></i>
-                                </button>
-                                <div class="accordion-body">
-                                    <div class="input-row-2col">
-                                        <div class="input-group">
-                                            <label>داروی اول</label>
-                                            <select id="compatDrug1"><option value="">انتخاب کنید</option></select>
-                                        </div>
-                                        <div class="input-group">
-                                            <label>داروی دوم</label>
-                                            <select id="compatDrug2"><option value="">انتخاب کنید</option></select>
-                                        </div>
-                                    </div>
-                                    <div class="input-group">
-                                        <label>محلول</label>
-                                        <select id="compatSolution">
-                                            <option value="NS">Normal Saline — N/S</option>
-                                            <option value="D5W">Dextrose 5% — D5W</option>
-                                            <option value="DS">Dextrose Saline — D/S</option>
-                                            <option value="RL">Ringer Lactate — RL</option>
-                                        </select>
-                                    </div>
-                                    <button class="tool-btn" onclick="checkCompatibility()"><i class="fas fa-search"></i> بررسی سازگاری</button>
-                                    <div class="tool-result" id="compatResult"></div>
-                                </div>
-                            </div>
+
                         </div>
                     </div>
 
