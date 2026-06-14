@@ -1007,15 +1007,16 @@
                                 <button class="accordion-header" onclick="toggleAccordion(this)">
                                     <div class="accordion-icon-wrap" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb)"><i class="fas fa-vials"></i></div>
                                     <div class="accordion-title-wrap">
-                                        <span class="accordion-title">سازگاری Y-Site
-                                            <button class="help-icon" data-help="ysite" style="pointer-events:auto;">ⓘ</button>
-                                        </span>
+                                        <span class="accordion-title">سازگاری Y-Site</span>
                                         <span class="accordion-sub">Drug Compatibility Matrix</span>
                                     </div>
                                     <i class="fas fa-chevron-down accordion-chevron"></i>
                                 </button>
                                 <div class="accordion-body" id="ysiteAccordionBody">
-                                    <p class="ysite-intro">یک یا چند دارو انتخاب کنید تا سازگاری Y-Site بین آن‌ها بررسی شود.</p>
+                                    <p class="ysite-intro">
+                                        یک یا چند دارو انتخاب کنید تا سازگاری Y-Site بین آن‌ها بررسی شود.
+                                        <button class="help-icon" data-help="ysite">ⓘ</button>
+                                    </p>
                                     <div class="ysite-drug-grid" id="ysiteDrugGrid"></div>
                                     <div class="ysite-matrix-wrap" id="ysiteMatrixWrap" style="display:none;">
                                         <div class="ysite-matrix" id="ysiteMatrix"></div>
@@ -1102,6 +1103,235 @@
                                     </div>
                                     <button class="tool-btn" onclick="calculateIBW()"><i class="fas fa-calculator"></i> محاسبه</button>
                                     <div class="tool-result" id="ibwResult"></div>
+                                </div>
+                            </div>
+
+                            <!-- Ventilator Tidal Volume -->
+                            <div class="accordion-item">
+                                <button class="accordion-header" onclick="toggleAccordion(this)">
+                                    <div class="accordion-icon-wrap" style="background:linear-gradient(135deg,#0ea5e9,#22d3ee)"><i class="fas fa-lungs-virus"></i></div>
+                                    <div class="accordion-title-wrap">
+                                        <span class="accordion-title">حجم جاری ونتیلاتور</span>
+                                        <span class="accordion-sub">Tidal Volume — Lung-Protective 6 mL/kg PBW</span>
+                                    </div>
+                                    <i class="fas fa-chevron-down accordion-chevron"></i>
+                                </button>
+                                <div class="accordion-body">
+                                    <p class="tool-note"><i class="fas fa-info-circle"></i> حجم جاری بر اساس وزن ایده‌آل (PBW) محاسبه می‌شود، نه وزن واقعی بیمار.</p>
+
+                                    <!-- Gender -->
+                                    <div class="control-group">
+                                        <label>جنسیت</label>
+                                        <div class="method-selector-compact" id="ventGenderBtns">
+                                            <button class="method-btn-compact gradient active" data-gender="male"><i class="fas fa-mars"></i> مرد</button>
+                                            <button class="method-btn-compact gradient" data-gender="female"><i class="fas fa-venus"></i> زن</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Measurement method tabs -->
+                                    <div class="control-group" style="margin-top:10px;">
+                                        <label>روش اندازه‌گیری</label>
+                                        <div class="vent-method-tabs" id="ventMethodTabs">
+                                            <button class="vent-tab active" data-tab="height">قد <span class="latin-inline">(cm)</span></button>
+                                            <button class="vent-tab" data-tab="ulna">طول اولنا <span class="latin-inline">(cm)</span></button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Height input -->
+                                    <div class="vent-input-panel" id="ventPanel_height">
+                                        <div class="calc-toggles-stack">
+                                            <div class="calc-toggle-item">
+                                                <div class="oxy-input-row">
+                                                    <span class="oxy-label">قد بیمار</span>
+                                                    <div class="oxy-field">
+                                                        <input type="number" id="ventHeight" inputmode="decimal" placeholder="170" class="oxy-input" step="0.1">
+                                                        <span class="oxy-unit">cm</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Ulna length input -->
+                                    <div class="vent-input-panel" id="ventPanel_ulna" style="display:none;">
+                                        <p class="tool-note" style="margin-bottom:8px;"><i class="fas fa-ruler"></i> از نوک آرنج (اولکرانون) تا مچ (استایلوئید اولنا) اندازه بگیرید.</p>
+                                        <div class="calc-toggles-stack">
+                                            <div class="calc-toggle-item">
+                                                <div class="oxy-input-row">
+                                                    <span class="oxy-label">طول اولنا</span>
+                                                    <div class="oxy-field">
+                                                        <input type="number" id="ventUlna" inputmode="decimal" placeholder="26" class="oxy-input" step="0.1">
+                                                        <span class="oxy-unit">cm</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button class="calculate-btn-enhanced gradient" onclick="calculateVentTV()" style="margin-top:10px;">
+                                        <i class="fas fa-calculator"></i><span>محاسبه</span>
+                                    </button>
+
+                                    <div class="vent-result" id="ventResult" style="display:none;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Nutritional Calculator -->
+                            <div class="accordion-item">
+                                <button class="accordion-header" onclick="toggleAccordion(this)">
+                                    <div class="accordion-icon-wrap" style="background:linear-gradient(135deg,#f59e0b,#10b981)"><i class="fas fa-utensils"></i></div>
+                                    <div class="accordion-title-wrap">
+                                        <span class="accordion-title">محاسبه نیاز تغذیه‌ای</span>
+                                        <span class="accordion-sub">Caloric & Protein Requirements — ICU</span>
+                                    </div>
+                                    <i class="fas fa-chevron-down accordion-chevron"></i>
+                                </button>
+                                <div class="accordion-body">
+                                    <div class="calc-toggles-stack">
+                                        <div class="calc-toggle-item">
+                                            <div class="oxy-input-row">
+                                                <span class="oxy-label">وزن بیمار</span>
+                                                <div class="oxy-field">
+                                                    <input type="number" id="nutWeight" inputmode="decimal" placeholder="70" class="oxy-input" step="0.1">
+                                                    <span class="oxy-unit">kg</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="calc-toggle-item">
+                                            <div class="oxy-input-row">
+                                                <span class="oxy-label">قد بیمار</span>
+                                                <div class="oxy-field">
+                                                    <input type="number" id="nutHeight" inputmode="decimal" placeholder="170" class="oxy-input" step="0.1">
+                                                    <span class="oxy-unit">cm</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="calc-toggle-item">
+                                            <div class="oxy-input-row">
+                                                <span class="oxy-label">سن</span>
+                                                <div class="oxy-field">
+                                                    <input type="number" id="nutAge" inputmode="numeric" placeholder="50" class="oxy-input" step="1">
+                                                    <span class="oxy-unit">سال</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Gender -->
+                                    <div class="control-group" style="margin-top:10px;">
+                                        <label>جنسیت</label>
+                                        <div class="method-selector-compact" id="nutGenderBtns">
+                                            <button class="method-btn-compact gradient active" data-gender="male"><i class="fas fa-mars"></i> مرد</button>
+                                            <button class="method-btn-compact gradient" data-gender="female"><i class="fas fa-venus"></i> زن</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Stress factor -->
+                                    <div class="control-group" style="margin-top:10px;">
+                                        <label>وضعیت بالینی (ضریب استرس)</label>
+                                        <div class="calc-toggles-stack">
+                                            <div class="calc-toggle-item">
+                                                <select id="nutStress" class="manual-unit-select" style="width:100%;padding:10px 12px;border-radius:8px;font-family:var(--font-persian);font-size:13px;direction:rtl;">
+                                                    <option value="1.0">طبیعی / بستری ساده (×1.0)</option>
+                                                    <option value="1.2" selected>بعد از جراحی / ICU خفیف (×1.2)</option>
+                                                    <option value="1.35">سپسیس / تروما (×1.35)</option>
+                                                    <option value="1.5">سوختگی متوسط / هد اینجوری (×1.5)</option>
+                                                    <option value="1.7">سوختگی شدید (×1.7)</option>
+                                                    <option value="2.0">سوختگی >40% / ARDS (×2.0)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button class="calculate-btn-enhanced gradient" onclick="calculateNutrition()" style="margin-top:10px;">
+                                        <i class="fas fa-calculator"></i><span>محاسبه</span>
+                                    </button>
+
+                                    <div class="nut-result" id="nutResult" style="display:none;"></div>
+                                </div>
+                            </div>
+
+                            <!-- VBG Interpreter -->
+                            <div class="accordion-item">
+                                <button class="accordion-header" onclick="toggleAccordion(this)">
+                                    <div class="accordion-icon-wrap" style="background:linear-gradient(135deg,#dc2626,#7c3aed)"><i class="fas fa-droplet"></i></div>
+                                    <div class="accordion-title-wrap">
+                                        <span class="accordion-title">تفسیر گازهای خون وریدی</span>
+                                        <span class="accordion-sub">VBG Interpretation — ABG</span>
+                                    </div>
+                                    <i class="fas fa-chevron-down accordion-chevron"></i>
+                                </button>
+                                <div class="accordion-body">
+                                    <p class="tool-note"><i class="fas fa-info-circle"></i> مقادیر VBG را وارد کنید. هرچه کامل‌تر باشد، تفسیر دقیق‌تر خواهد بود.</p>
+                                    <div class="calc-toggles-stack">
+                                        <div class="calc-toggle-item">
+                                            <div class="oxy-input-row">
+                                                <span class="oxy-label">pH</span>
+                                                <div class="oxy-field">
+                                                    <input type="number" id="vbgPH" inputmode="decimal" placeholder="7.40" step="0.01" min="6.5" max="8.0" class="oxy-input" style="width:90px;">
+                                                    <span class="oxy-unit" style="opacity:0">—</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="calc-toggle-item">
+                                            <div class="oxy-input-row">
+                                                <span class="oxy-label">pCO₂</span>
+                                                <div class="oxy-field">
+                                                    <input type="number" id="vbgPCO2" inputmode="decimal" placeholder="45" step="0.1" class="oxy-input" style="width:90px;">
+                                                    <span class="oxy-unit">mmHg</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="calc-toggle-item">
+                                            <div class="oxy-input-row">
+                                                <span class="oxy-label">HCO₃⁻</span>
+                                                <div class="oxy-field">
+                                                    <input type="number" id="vbgHCO3" inputmode="decimal" placeholder="24" step="0.1" class="oxy-input" style="width:90px;">
+                                                    <span class="oxy-unit">mEq/L</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="calc-toggle-item">
+                                            <div class="oxy-input-row">
+                                                <span class="oxy-label">BE</span>
+                                                <div class="oxy-field">
+                                                    <input type="number" id="vbgBE" inputmode="decimal" placeholder="0" step="0.1" class="oxy-input" style="width:90px;">
+                                                    <span class="oxy-unit">mEq/L</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="calc-toggle-item">
+                                            <div class="oxy-input-row">
+                                                <span class="oxy-label">Na⁺ <span style="font-size:10px;opacity:0.7">(اختیاری)</span></span>
+                                                <div class="oxy-field">
+                                                    <input type="number" id="vbgNa" inputmode="decimal" placeholder="140" step="1" class="oxy-input" style="width:90px;">
+                                                    <span class="oxy-unit">mEq/L</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="calc-toggle-item">
+                                            <div class="oxy-input-row">
+                                                <span class="oxy-label">Cl⁻ <span style="font-size:10px;opacity:0.7">(اختیاری)</span></span>
+                                                <div class="oxy-field">
+                                                    <input type="number" id="vbgCl" inputmode="decimal" placeholder="104" step="1" class="oxy-input" style="width:90px;">
+                                                    <span class="oxy-unit">mEq/L</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="calc-toggle-item">
+                                            <div class="oxy-input-row">
+                                                <span class="oxy-label">Albumin <span style="font-size:10px;opacity:0.7">(اختیاری)</span></span>
+                                                <div class="oxy-field">
+                                                    <input type="number" id="vbgAlbumin" inputmode="decimal" placeholder="4.0" step="0.1" class="oxy-input" style="width:90px;">
+                                                    <span class="oxy-unit">g/dL</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button class="calculate-btn-enhanced gradient" onclick="interpretVBG()" style="margin-top:10px;">
+                                        <i class="fas fa-magnifying-glass"></i><span>تفسیر</span>
+                                    </button>
+                                    <div class="vbg-result" id="vbgResult" style="display:none;"></div>
                                 </div>
                             </div>
 
