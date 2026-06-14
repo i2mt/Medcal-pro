@@ -4484,36 +4484,36 @@ window.calculateVentTV = function() {
     resultDiv.innerHTML = `
         ${estimationNote ? `<div class="vent-estimation">${estimationNote}</div>` : ''}
         <div class="vent-pbw-row">
-            <span>وزن پیش‌بینی‌شده (PBW)</span>
-            <strong class="latin-inline">${pbw.toFixed(1)} kg</strong>
+            <span>وزن پیش‌بینی‌شده <span class="latin-inline">(PBW)</span></span>
+            <strong><span class="latin-inline">${pbw.toFixed(1)} kg</span></strong>
         </div>
         <div class="vent-tv-grid">
             <div class="vent-tv-item">
-                <div class="vent-tv-label">4 mL/kg</div>
-                <div class="vent-tv-value">${Math.round(tv4)}</div>
-                <div class="vent-tv-unit">mL</div>
-                <div class="vent-tv-note">حداقل — ARDS شدید</div>
+                <div class="vent-tv-label"><span class="latin-inline">4 mL/kg</span></div>
+                <div class="vent-tv-value"><span class="latin-inline">${Math.round(tv4)}</span></div>
+                <div class="vent-tv-unit"><span class="latin-inline">mL</span></div>
+                <div class="vent-tv-note">حداقل — <span class="latin-inline">ARDS</span> شدید</div>
             </div>
             <div class="vent-tv-item vent-tv-target">
-                <div class="vent-tv-label">6 mL/kg</div>
-                <div class="vent-tv-value">${Math.round(tv6)}</div>
-                <div class="vent-tv-unit">mL</div>
+                <div class="vent-tv-label"><span class="latin-inline">6 mL/kg</span></div>
+                <div class="vent-tv-value"><span class="latin-inline">${Math.round(tv6)}</span></div>
+                <div class="vent-tv-unit"><span class="latin-inline">mL</span></div>
                 <div class="vent-tv-note">🎯 هدف — تهویه حفاظتی</div>
             </div>
             <div class="vent-tv-item">
-                <div class="vent-tv-label">7 mL/kg</div>
-                <div class="vent-tv-value">${Math.round(tv7)}</div>
-                <div class="vent-tv-unit">mL</div>
+                <div class="vent-tv-label"><span class="latin-inline">7 mL/kg</span></div>
+                <div class="vent-tv-value"><span class="latin-inline">${Math.round(tv7)}</span></div>
+                <div class="vent-tv-unit"><span class="latin-inline">mL</span></div>
                 <div class="vent-tv-note">مرز بالایی قابل قبول</div>
             </div>
             <div class="vent-tv-item vent-tv-warn">
-                <div class="vent-tv-label">8 mL/kg</div>
-                <div class="vent-tv-value">${Math.round(tv8)}</div>
-                <div class="vent-tv-unit">mL</div>
+                <div class="vent-tv-label"><span class="latin-inline">8 mL/kg</span></div>
+                <div class="vent-tv-value"><span class="latin-inline">${Math.round(tv8)}</span></div>
+                <div class="vent-tv-unit"><span class="latin-inline">mL</span></div>
                 <div class="vent-tv-note">⚠️ فقط در موارد استثنا</div>
             </div>
         </div>
-        <div class="vent-note">بر اساس ARDSNet — فرمول Devine برای PBW</div>
+        <div class="vent-note"><span class="latin-inline">ARDSNet</span> — فرمول <span class="latin-inline">Devine</span> برای <span class="latin-inline">PBW</span></div>
     `;
     resultDiv.style.display = 'block';
     haptic(40);
@@ -4653,9 +4653,30 @@ window.interpretVBG = function() {
     let primaryLabel = '';
     let primaryClass = '';
 
-    if (normal_pH) {
-        primaryLabel = 'pH طبیعی';
-        primaryClass = 'vbg-normal';
+    // Even if pH is normal, determine what underlying disorder exists
+    // A normal pH can mask a compensated disorder
+    const pco2_high = pco2 > 45, pco2_low = pco2 < 35;
+    const hco3_high = hco3 > 26, hco3_low = hco3 < 22;
+    const beAcid = !isNaN(be) && be < -2, beAlk = !isNaN(be) && be > 2;
+
+    if (!acidosis && !alkalosis) {
+        // pH normal — check if there's a compensated disorder
+        if (pco2_high && hco3_high) {
+            primaryLabel = 'آسیدوز تنفسی جبران‌شده';
+            primaryClass = 'vbg-normal';
+        } else if (pco2_low && hco3_low) {
+            primaryLabel = 'آلکالوز تنفسی جبران‌شده';
+            primaryClass = 'vbg-normal';
+        } else if (hco3_low || beAcid) {
+            primaryLabel = 'آسیدوز متابولیک جبران‌شده';
+            primaryClass = 'vbg-normal';
+        } else if (hco3_high || beAlk) {
+            primaryLabel = 'آلکالوز متابولیک جبران‌شده';
+            primaryClass = 'vbg-normal';
+        } else {
+            primaryLabel = 'طبیعی — اختلال اسید-باز وجود ندارد';
+            primaryClass = 'vbg-normal';
+        }
     } else if (acidosis && resp_primary)  { primaryLabel = 'آسیدوز تنفسی';     primaryClass = 'vbg-acidosis'; }
     else if (acidosis && meta_primary)   { primaryLabel = 'آسیدوز متابولیک';   primaryClass = 'vbg-acidosis'; }
     else if (alkalosis && resp_primary)  { primaryLabel = 'آلکالوز تنفسی';     primaryClass = 'vbg-alkalosis'; }
