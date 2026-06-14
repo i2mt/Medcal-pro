@@ -780,6 +780,7 @@ function initializeApp() {
     setupMorse();
     setupOxygenCalculator();
     setupYSiteChecker();
+    setupVentilatorCalc();
     setupThemePicker();
     setupUpdateDetection();
     setupThemeModeListener();
@@ -3881,6 +3882,7 @@ const HELP_TEXTS = {
     dose: 'دوز درخواستی پزشک را اینجا وارد کنید.\nواحد دوز بسته به دارو متفاوت است (مثلاً واحد/ساعت، میکروگرم/کیلوگرم/دقیقه). پس از وارد کردن دوز، دکمه محاسبه را بزنید.',
     weight: 'وقتی این گزینه فعال است، دوز بر اساس وزن بیمار محاسبه می‌شود.\nمثلاً اگر دوز ۰.۱ واحد/کیلوگرم/ساعت باشد و وزن بیمار ۷۰ کیلوگرم، دوز کل ۷ واحد/ساعت خواهد بود.',
     reverse: 'با فعال کردن این گزینه، به جای وارد کردن دوز، سرعت پمپ (سی‌سی/ساعت) را وارد می‌کنید و دوز دریافتی بیمار محاسبه می‌شود.',
+    ysite: 'Y-Site به نقطه‌ای در ست سرم گفته می‌شود که دو دارو از دو خط مختلف به یک ورید تزریق می‌شوند.\nسازگاری Y-Site یعنی آیا این دو دارو می‌توانند همزمان از یک ورید تزریق شوند بدون اینکه واکنش شیمیایی داشته باشند یا رسوب تشکیل دهند.\n⚠️ همیشه با داروساز مشورت کنید.',
 };
 
 function setupHelpPopovers() {
@@ -4415,7 +4417,396 @@ function renderMatrix(selected) {
     setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
 }
 
-// Add ysite help text
-if (typeof HELP_TEXTS !== 'undefined') {
-    HELP_TEXTS.ysite = 'Y-Site به نقطه‌ای در ست سرم گفته می‌شود که دو دارو از دو خط مختلف به یک ورید تزریق می‌شوند.\nسازگاری Y-Site یعنی آیا این دو دارو می‌توانند همزمان از یک ورید تزریق شوند بدون اینکه با هم واکنش شیمیایی داشته باشند یا رسوب تشکیل دهند.';
+// setupYSiteChecker wired in initializeApp
+
+// ============================================
+// VENTILATOR TIDAL VOLUME CALCULATOR
+// ============================================
+function setupVentilatorCalc() {
+    // Gender buttons
+    const genderBtns = document.querySelectorAll('#ventGenderBtns .method-btn-compact');
+    genderBtns.forEach(btn => btn.addEventListener('click', function() {
+        genderBtns.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+    }));
+
+    // Method tabs
+    const tabs = document.querySelectorAll('#ventMethodTabs .vent-tab');
+    tabs.forEach(tab => tab.addEventListener('click', function() {
+        tabs.forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('.vent-input-panel').forEach(p => p.style.display = 'none');
+        const panel = document.getElementById('ventPanel_' + this.dataset.tab);
+        if (panel) panel.style.display = 'block';
+    }));
 }
+
+window.calculateVentTV = function() {
+    const genderBtn = document.querySelector('#ventGenderBtns .method-btn-compact.active');
+    const gender = genderBtn ? genderBtn.dataset.gender : 'male';
+    const activeTab = document.querySelector('#ventMethodTabs .vent-tab.active');
+    const method = activeTab ? activeTab.dataset.tab : 'height';
+    const resultDiv = document.getElementById('ventResult');
+
+    let heightCm = null;
+    let estimationNote = '';
+
+    if (method === 'height') {
+        heightCm = PersianNumbers.parseNumber(document.getElementById('ventHeight')?.value);
+        if (!heightCm || isNaN(heightCm) || heightCm < 100 || heightCm > 230) {
+            showToast('خطا', 'قد را به درستی وارد کنید (100–230 cm)', 'error'); return;
+        }
+
+    } else if (method === 'ulna') {
+        const ulna = PersianNumbers.parseNumber(document.getElementById('ventUlna')?.value);
+        if (!ulna || isNaN(ulna)) { showToast('خطا', 'طول اولنا را وارد کنید', 'error'); return; }
+        // Kwok & Whitelaw formula (PMID 1574843)
+        // Male:   height = 3.294 * ulna + 82.7
+        // Female: height = 3.316 * ulna + 81.3  (simplified)
+        heightCm = gender === 'male' ? (3.294 * ulna + 82.7) : (3.316 * ulna + 81.3);
+        estimationNote = `قد تخمینی از طول اولنا (${ulna} cm): <strong>${heightCm.toFixed(1)} cm</strong>`;
+    }
+
+    // PBW (Predicted Body Weight) — ARDSNet formula
+    const heightInch = heightCm / 2.54;
+    const pbw = gender === 'male'
+        ? 50 + 2.3 * (heightInch - 60)
+        : 45.5 + 2.3 * (heightInch - 60);
+
+    if (pbw < 20) { showToast('خطا', 'قد وارد شده خیلی کوتاه است', 'error'); return; }
+
+    // TV at different mL/kg
+    const tv4  = pbw * 4;
+    const tv6  = pbw * 6;
+    const tv7  = pbw * 7;
+    const tv8  = pbw * 8;
+
+    resultDiv.innerHTML = `
+        ${estimationNote ? `<div class="vent-estimation">${estimationNote}</div>` : ''}
+        <div class="vent-pbw-row">
+            <span>وزن پیش‌بینی‌شده (PBW)</span>
+            <strong class="latin-inline">${pbw.toFixed(1)} kg</strong>
+        </div>
+        <div class="vent-tv-grid">
+            <div class="vent-tv-item">
+                <div class="vent-tv-label">4 mL/kg</div>
+                <div class="vent-tv-value">${Math.round(tv4)}</div>
+                <div class="vent-tv-unit">mL</div>
+                <div class="vent-tv-note">حداقل — ARDS شدید</div>
+            </div>
+            <div class="vent-tv-item vent-tv-target">
+                <div class="vent-tv-label">6 mL/kg</div>
+                <div class="vent-tv-value">${Math.round(tv6)}</div>
+                <div class="vent-tv-unit">mL</div>
+                <div class="vent-tv-note">🎯 هدف — تهویه حفاظتی</div>
+            </div>
+            <div class="vent-tv-item">
+                <div class="vent-tv-label">7 mL/kg</div>
+                <div class="vent-tv-value">${Math.round(tv7)}</div>
+                <div class="vent-tv-unit">mL</div>
+                <div class="vent-tv-note">مرز بالایی قابل قبول</div>
+            </div>
+            <div class="vent-tv-item vent-tv-warn">
+                <div class="vent-tv-label">8 mL/kg</div>
+                <div class="vent-tv-value">${Math.round(tv8)}</div>
+                <div class="vent-tv-unit">mL</div>
+                <div class="vent-tv-note">⚠️ فقط در موارد استثنا</div>
+            </div>
+        </div>
+        <div class="vent-note">بر اساس ARDSNet — فرمول Devine برای PBW</div>
+    `;
+    resultDiv.style.display = 'block';
+    haptic(40);
+    setTimeout(() => resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+};
+
+// ============================================
+// NUTRITIONAL REQUIREMENTS CALCULATOR
+// ============================================
+window.calculateNutrition = function() {
+    const weight  = PersianNumbers.parseNumber(document.getElementById('nutWeight')?.value);
+    const height  = PersianNumbers.parseNumber(document.getElementById('nutHeight')?.value);
+    const age     = PersianNumbers.parseNumber(document.getElementById('nutAge')?.value);
+    const genderBtn = document.querySelector('#nutGenderBtns .method-btn-compact.active');
+    const gender  = genderBtn ? genderBtn.dataset.gender : 'male';
+    const stress  = parseFloat(document.getElementById('nutStress')?.value || '1.2');
+    const resultDiv = document.getElementById('nutResult');
+
+    if (!weight || isNaN(weight) || weight < 20) { showToast('خطا', 'وزن را وارد کنید', 'error'); return; }
+    if (!height || isNaN(height) || height < 100) { showToast('خطا', 'قد را وارد کنید', 'error'); return; }
+    if (!age    || isNaN(age)    || age < 1)      { showToast('خطا', 'سن را وارد کنید', 'error'); return; }
+
+    // Harris-Benedict BMR
+    let bmr_hb, bmr_ms;
+    if (gender === 'male') {
+        bmr_hb = 66.5 + (13.75 * weight) + (5.003 * height) - (6.75 * age);
+        bmr_ms = 10 * weight + 6.25 * height - 5 * age + 5;
+    } else {
+        bmr_hb = 655.1 + (9.563 * weight) + (1.850 * height) - (4.676 * age);
+        bmr_ms = 10 * weight + 6.25 * height - 5 * age - 161;
+    }
+
+    // TEE (Total Energy Expenditure) with stress factor
+    // ICU patients typically sedentary activity factor = 1.0-1.1
+    const activityFactor = 1.05;
+    const tee_hb = Math.round(bmr_hb * activityFactor * stress);
+    const tee_ms = Math.round(bmr_ms * activityFactor * stress);
+
+    // Protein requirements by condition
+    let proteinMin, proteinMax, proteinNote;
+    if (stress <= 1.1) {
+        proteinMin = 0.8; proteinMax = 1.0;
+        proteinNote = 'نیاز طبیعی';
+    } else if (stress <= 1.3) {
+        proteinMin = 1.2; proteinMax = 1.5;
+        proteinNote = 'ICU / بعد از جراحی';
+    } else if (stress <= 1.6) {
+        proteinMin = 1.5; proteinMax = 2.0;
+        proteinNote = 'سپسیس / تروما';
+    } else {
+        proteinMin = 1.5; proteinMax = 2.5;
+        proteinNote = 'سوختگی / ARDS';
+    }
+
+    const protMinG = Math.round(proteinMin * weight);
+    const protMaxG = Math.round(proteinMax * weight);
+    const protMinKcal = Math.round(protMinG * 4);
+    const protMaxKcal = Math.round(protMaxG * 4);
+
+    // Non-protein calories
+    const npcMin = tee_ms - protMaxKcal;
+    const npcMax = tee_ms - protMinKcal;
+
+    // Enteral rate suggestion (assuming 1 kcal/mL standard formula)
+    const enteralRateMin = Math.round(npcMin / 24);
+    const enteralRateMax = Math.round(tee_ms / 24);
+
+    // Fluid from enteral feeding
+    const fluidFromFeed = Math.round(enteralRateMax * 0.85); // ~85% of volume is free water
+
+    resultDiv.innerHTML = `
+        <div class="nut-section">
+            <div class="nut-section-title"><i class="fas fa-fire"></i> نیاز کالری</div>
+            <div class="nut-row"><span>BMR — Harris-Benedict</span><strong>${bmr_hb.toFixed(0)} kcal/day</strong></div>
+            <div class="nut-row"><span>BMR — Mifflin-St Jeor</span><strong>${bmr_ms.toFixed(0)} kcal/day</strong></div>
+            <div class="nut-row nut-row-highlight"><span>هدف کالری روزانه (×${stress})</span><strong>${tee_ms} kcal/day</strong></div>
+            <div class="nut-row nut-row-sub"><span>معادل کالری ساعتی</span><strong>${Math.round(tee_ms/24)} kcal/hr</strong></div>
+        </div>
+        <div class="nut-section">
+            <div class="nut-section-title"><i class="fas fa-dna"></i> نیاز پروتئین — ${proteinNote}</div>
+            <div class="nut-row"><span>محدوده پروتئین</span><strong>${proteinMin}–${proteinMax} g/kg/day</strong></div>
+            <div class="nut-row nut-row-highlight"><span>هدف پروتئین روزانه</span><strong>${protMinG}–${protMaxG} g/day</strong></div>
+            <div class="nut-row nut-row-sub"><span>معادل کالری پروتئین</span><strong>${protMinKcal}–${protMaxKcal} kcal/day</strong></div>
+        </div>
+        <div class="nut-section">
+            <div class="nut-section-title"><i class="fas fa-syringe"></i> تغذیه انترال (فرمول ۱ kcal/mL)</div>
+            <div class="nut-row nut-row-highlight"><span>سرعت پیشنهادی</span><strong>${enteralRateMin}–${enteralRateMax} mL/hr</strong></div>
+            <div class="nut-row nut-row-sub"><span>آب آزاد از تغذیه</span><strong>~${fluidFromFeed} mL/day</strong></div>
+        </div>
+        <div class="nut-disclaimer"><i class="fas fa-triangle-exclamation"></i> این محاسبه راهنما است. تغذیه بیماران بحرانی باید با متخصص تغذیه هماهنگ شود.</div>
+    `;
+    resultDiv.style.display = 'block';
+    haptic(40);
+    setTimeout(() => resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+};
+
+// Gender buttons for nutrition
+(function setupNutritionGender() {
+    document.addEventListener('DOMContentLoaded', () => {
+        const genderBtns = document.querySelectorAll('#nutGenderBtns .method-btn-compact');
+        genderBtns.forEach(btn => btn.addEventListener('click', function() {
+            genderBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+        }));
+    });
+})();
+
+// ============================================
+// VBG / ABG INTERPRETER
+// ============================================
+window.interpretVBG = function() {
+    const pH    = PersianNumbers.parseNumber(document.getElementById('vbgPH')?.value);
+    const pco2  = PersianNumbers.parseNumber(document.getElementById('vbgPCO2')?.value);
+    const hco3  = PersianNumbers.parseNumber(document.getElementById('vbgHCO3')?.value);
+    const be    = PersianNumbers.parseNumber(document.getElementById('vbgBE')?.value);
+    const na    = PersianNumbers.parseNumber(document.getElementById('vbgNa')?.value);
+    const cl    = PersianNumbers.parseNumber(document.getElementById('vbgCl')?.value);
+    const alb   = PersianNumbers.parseNumber(document.getElementById('vbgAlbumin')?.value);
+    const result = document.getElementById('vbgResult');
+
+    // Validate required fields
+    if (isNaN(pH)   || pH < 6.5 || pH > 8.0)   { showToast('خطا', 'pH را بین 6.5 و 8.0 وارد کنید', 'error'); return; }
+    if (isNaN(pco2) || pco2 < 5 || pco2 > 150)  { showToast('خطا', 'pCO₂ را وارد کنید', 'error'); return; }
+    if (isNaN(hco3) || hco3 < 1 || hco3 > 60)   { showToast('خطا', 'HCO₃ را وارد کنید', 'error'); return; }
+
+    const findings = [];
+    const warnings = [];
+
+    // ── 1. PRIMARY DISORDER ──────────────────
+    const acidosis  = pH < 7.35;
+    const alkalosis = pH > 7.45;
+    const normal_pH = !acidosis && !alkalosis;
+
+    const resp_primary = Math.abs(pco2 - 40) / 40 > Math.abs(hco3 - 24) / 24;
+    const meta_primary = !resp_primary;
+
+    let primaryLabel = '';
+    let primaryClass = '';
+
+    if (normal_pH) {
+        primaryLabel = 'pH طبیعی';
+        primaryClass = 'vbg-normal';
+    } else if (acidosis && resp_primary)  { primaryLabel = 'آسیدوز تنفسی';     primaryClass = 'vbg-acidosis'; }
+    else if (acidosis && meta_primary)   { primaryLabel = 'آسیدوز متابولیک';   primaryClass = 'vbg-acidosis'; }
+    else if (alkalosis && resp_primary)  { primaryLabel = 'آلکالوز تنفسی';     primaryClass = 'vbg-alkalosis'; }
+    else if (alkalosis && meta_primary)  { primaryLabel = 'آلکالوز متابولیک';  primaryClass = 'vbg-alkalosis'; }
+
+    // ── 2. COMPENSATION ──────────────────────
+    let compLabel = '';
+    let compStatus = 'uncompensated';
+
+    if (acidosis && resp_primary) {
+        // Respiratory acidosis: expected HCO3 compensation
+        // Acute: HCO3 rises 1 per 10 mmHg CO2 rise
+        // Chronic: HCO3 rises 3.5 per 10 mmHg CO2 rise
+        const acute_hco3   = 24 + ((pco2 - 40) / 10) * 1;
+        const chronic_hco3 = 24 + ((pco2 - 40) / 10) * 3.5;
+        if (hco3 <= acute_hco3 + 2)
+            { compLabel = 'حاد — جبران متابولیک نشده'; }
+        else if (hco3 >= chronic_hco3 - 2)
+            { compLabel = 'مزمن — جبران متابولیک کامل'; compStatus = 'compensated'; }
+        else
+            { compLabel = 'در حال جبران — بین حاد و مزمن'; compStatus = 'partial'; }
+
+    } else if (alkalosis && resp_primary) {
+        // Respiratory alkalosis
+        const acute_hco3   = 24 - ((40 - pco2) / 10) * 2;
+        const chronic_hco3 = 24 - ((40 - pco2) / 10) * 5;
+        if (hco3 >= acute_hco3 - 2)
+            { compLabel = 'حاد — جبران متابولیک نشده'; }
+        else if (hco3 <= chronic_hco3 + 2)
+            { compLabel = 'مزمن — جبران متابولیک کامل'; compStatus = 'compensated'; }
+        else
+            { compLabel = 'در حال جبران'; compStatus = 'partial'; }
+
+    } else if (acidosis && meta_primary) {
+        // Metabolic acidosis: Winter's formula for expected pCO2
+        const expected_pco2 = 1.5 * hco3 + 8;
+        const tolerance = 2;
+        if (Math.abs(pco2 - expected_pco2) <= tolerance)
+            { compLabel = `جبران تنفسی مناسب (pCO₂ انتظاری: ${expected_pco2.toFixed(1)} mmHg)`; compStatus = 'compensated'; }
+        else if (pco2 > expected_pco2 + tolerance)
+            { compLabel = `جبران تنفسی ناکافی — همراه آسیدوز تنفسی (pCO₂ انتظاری: ${expected_pco2.toFixed(1)})`; compStatus = 'mixed'; warnings.push('آسیدوز مختلط متابولیک + تنفسی'); }
+        else
+            { compLabel = `جبران تنفسی بیش از حد — همراه آلکالوز تنفسی (pCO₂ انتظاری: ${expected_pco2.toFixed(1)})`; compStatus = 'mixed'; }
+
+    } else if (alkalosis && meta_primary) {
+        // Metabolic alkalosis: expected pCO2 = 0.7 × HCO3 + 21 (±2)
+        const expected_pco2 = 0.7 * hco3 + 21;
+        if (Math.abs(pco2 - expected_pco2) <= 2)
+            { compLabel = `جبران تنفسی مناسب (pCO₂ انتظاری: ${expected_pco2.toFixed(1)} mmHg)`; compStatus = 'compensated'; }
+        else if (pco2 < expected_pco2 - 2)
+            { compLabel = `جبران تنفسی بیش از حد — همراه آلکالوز تنفسی`; compStatus = 'mixed'; }
+        else
+            { compLabel = `جبران تنفسی ناکافی — همراه آسیدوز تنفسی`; compStatus = 'mixed'; }
+    }
+
+    // ── 3. ANION GAP ─────────────────────────
+    let agSection = '';
+    if (!isNaN(na) && !isNaN(cl)) {
+        const ag = na - (cl + hco3);
+        // Correct AG for albumin if provided
+        const albCorrection = !isNaN(alb) ? 2.5 * (4.0 - alb) : 0;
+        const ag_corrected = ag + albCorrection;
+        const ag_normal = ag_corrected >= 8 && ag_corrected <= 12;
+        const ag_high = ag_corrected > 12;
+
+        let agLabel = ag_high
+            ? `آنیون گپ بالا: ${ag_corrected.toFixed(1)} mEq/L ${!isNaN(alb) ? '(تصحیح‌شده)' : ''}`
+            : ag_normal
+                ? `آنیون گپ طبیعی: ${ag_corrected.toFixed(1)} mEq/L`
+                : `آنیون گپ پایین: ${ag_corrected.toFixed(1)} mEq/L`;
+
+        let agCauses = '';
+        if (ag_high) {
+            agCauses = '<div class="vbg-causes">علل HAGMA: <span>لاکتیک اسیدوز، کتواسیدوز، نارسایی کلیوی، مسمومیت (متانول، اتیلن گلیکول، سالیسیلات)</span></div>';
+            // Delta-delta ratio
+            const delta_ag = ag_corrected - 12;
+            const delta_hco3 = 24 - hco3;
+            if (delta_hco3 > 0) {
+                const dd = delta_ag / delta_hco3;
+                let ddLabel = '';
+                if (dd < 1)       ddLabel = 'DD < 1: آسیدوز متابولیک مختلط (HAGMA + NAGMA)';
+                else if (dd <= 2) ddLabel = 'DD 1–2: آسیدوز متابولیک با آنیون گپ خالص';
+                else              ddLabel = 'DD > 2: HAGMA + آلکالوز متابولیک مخفی';
+                agCauses += `<div class="vbg-dd">نسبت Delta-Delta: <strong>${dd.toFixed(2)}</strong> — ${ddLabel}</div>`;
+            }
+        } else if (!ag_high && acidosis && meta_primary) {
+            agCauses = '<div class="vbg-causes">علل NAGMA (Non-AG): <span>اسهال، RTA، سرم نرمال سالین بیش از حد، هیپرکلرمی</span></div>';
+        } else if (ag_corrected < 8) {
+            agCauses = '<div class="vbg-causes">آنیون گپ پایین: <span>هیپوآلبومینمی، مولتیپل میلوما، هیپرلیپیدمی، هیپرمنیزیمی</span></div>';
+        }
+
+        agSection = `<div class="vbg-section ${ag_high ? 'vbg-warn' : ''}">
+            <div class="vbg-section-title"><i class="fas fa-calculator"></i> آنیون گپ</div>
+            <div class="vbg-row"><span>آنیون گپ${!isNaN(alb) ? ' (تصحیح آلبومین)' : ''}</span><strong>${ag_corrected.toFixed(1)} mEq/L</strong></div>
+            ${agCauses}
+        </div>`;
+    }
+
+    // ── 4. CLINICAL CONTEXT ──────────────────
+    const beAbnormal = !isNaN(be) && Math.abs(be) > 2;
+    let beNote = '';
+    if (!isNaN(be)) {
+        if (be < -2)       beNote = `Base Excess: ${be.toFixed(1)} — کمبود بیکربنات / زمینه متابولیک اسیدی`;
+        else if (be > 2)   beNote = `Base Excess: ${be.toFixed(1)} — اضافه بیکربنات / زمینه متابولیک قلیایی`;
+        else               beNote = `Base Excess: ${be.toFixed(1)} — طبیعی`;
+    }
+
+    // Severity
+    let severity = '';
+    const ph_diff = Math.abs(pH - 7.40);
+    if (ph_diff < 0.05)      severity = '<span class="vbg-badge vbg-badge-ok">جبران‌شده / طبیعی</span>';
+    else if (ph_diff < 0.10) severity = '<span class="vbg-badge vbg-badge-mild">خفیف</span>';
+    else if (ph_diff < 0.15) severity = '<span class="vbg-badge vbg-badge-mod">متوسط</span>';
+    else                     severity = '<span class="vbg-badge vbg-badge-sev">شدید — مداخله فوری</span>';
+
+    // Build result HTML
+    result.innerHTML = `
+        <div class="vbg-primary ${primaryClass}">
+            <div class="vbg-primary-label">${primaryLabel}</div>
+            <div class="vbg-primary-severity">${severity}</div>
+        </div>
+
+        <div class="vbg-section">
+            <div class="vbg-section-title"><i class="fas fa-stethoscope"></i> مقادیر ورودی</div>
+            <div class="vbg-row"><span>pH</span><strong class="${pH < 7.35 ? 'vbg-red' : pH > 7.45 ? 'vbg-blue' : 'vbg-green'}">${pH.toFixed(2)}</strong></div>
+            <div class="vbg-row"><span>pCO₂</span><strong class="${pco2 > 45 ? 'vbg-red' : pco2 < 35 ? 'vbg-blue' : ''}">${pco2.toFixed(1)} mmHg</strong></div>
+            <div class="vbg-row"><span>HCO₃⁻</span><strong class="${hco3 < 22 ? 'vbg-red' : hco3 > 26 ? 'vbg-blue' : ''}">${hco3.toFixed(1)} mEq/L</strong></div>
+            ${!isNaN(be) ? `<div class="vbg-row"><span>Base Excess</span><strong class="${be < -2 ? 'vbg-red' : be > 2 ? 'vbg-blue' : ''}">${be > 0 ? '+' : ''}${be.toFixed(1)}</strong></div>` : ''}
+        </div>
+
+        ${compLabel ? `<div class="vbg-section">
+            <div class="vbg-section-title"><i class="fas fa-arrows-left-right"></i> جبران</div>
+            <div class="vbg-comp-text">${compLabel}</div>
+        </div>` : ''}
+
+        ${agSection}
+
+        ${beNote ? `<div class="vbg-section">
+            <div class="vbg-section-title"><i class="fas fa-vial"></i> Base Excess</div>
+            <div class="vbg-comp-text">${beNote}</div>
+        </div>` : ''}
+
+        ${warnings.length ? `<div class="vbg-section vbg-warn">
+            <div class="vbg-section-title"><i class="fas fa-triangle-exclamation"></i> هشدار</div>
+            ${warnings.map(w => `<div class="vbg-comp-text">⚠️ ${w}</div>`).join('')}
+        </div>` : ''}
+
+        <div class="vbg-disclaimer"><i class="fas fa-user-doctor"></i> این تفسیر ابزار کمکی است — تصمیم بالینی باید توسط پزشک گرفته شود.</div>
+    `;
+
+    result.style.display = 'block';
+    haptic(40);
+    setTimeout(() => result.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+};
